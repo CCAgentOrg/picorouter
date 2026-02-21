@@ -275,6 +275,8 @@ def run_server(
     rate_limit: int = 60
 ):
     """Run the HTTP server."""
+    from picorouter.tailscale import get_tailscale_ip, is_tailscale_running
+    
     APIHandler.router = router
     
     # Initialize key manager from config
@@ -285,8 +287,21 @@ def run_server(
     APIHandler.rate_limiter = RateLimiter(rate_limit) if rate_limit > 0 else None
     
     server = HTTPServer((host, port), APIHandler)
+    
     print(f"🚀 PicoRouter on http://{host}:{port}")
-    print(f"   Endpoint: http://{host}:{port}/v1")
+    
+    # Show URLs
+    urls = [f"http://{host}:{port}/v1"]
+    
+    # Add Tailscale URL if available
+    if is_tailscale_running():
+        ts_ip = get_tailscale_ip()
+        if ts_ip:
+            urls.append(f"http://{ts_ip}:{port}/v1 (Tailscale)")
+    
+    print(f"   Endpoints:")
+    for url in urls:
+        print(f"     • {url}")
     
     if APIHandler.key_manager.keys:
         print(f"   🔑 Keys: {len(APIHandler.key_manager.keys)} configured")

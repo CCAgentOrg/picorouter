@@ -20,6 +20,37 @@ from picorouter.providers import Router
 from picorouter.logger import Logger
 from picorouter.api import run_server
 from picorouter.keys import KeyManager
+from picorouter.tailscale import get_all_ips, is_tailscale_running, print_network_info, get_tailscale_ip
+
+
+def resolve_host(host: str) -> str:
+    """Resolve host alias to IP address."""
+    host = host.lower().strip()
+    
+    if host in ["0.0.0.0", "all", "*"]:
+        return "0.0.0.0"
+    
+    if host in ["127.0.0.1", "localhost"]:
+        return "127.0.0.1"
+    
+    # Tailscale
+    if host == "tailscale":
+        ts_ip = get_tailscale_ip()
+        if ts_ip:
+            return ts_ip
+        print("⚠️  Tailscale not detected. Using 0.0.0.0")
+        return "0.0.0.0"
+    
+    # LAN
+    if host == "lan":
+        ips = get_all_ips()
+        if ips.get("lan"):
+            return ips["lan"]
+        print("⚠️  No LAN IP found. Using 0.0.0.0")
+        return "0.0.0.0"
+    
+    # Assume it's already an IP
+    return host
 
 
 def create_config_interactive():
@@ -91,9 +122,10 @@ def main():
     # Serve
     serve_parser = subparsers.add_parser("serve", help="Start API server")
     serve_parser.add_argument("--profile", "-p", default="chat")
-    serve_parser.add_argument("--host", default="0.0.0.0")
+    serve_parser.add_argument("--host", default="0.0.0.0", help="Host: localhost, all, tailscale, lan, or IP")
     serve_parser.add_argument("--port", "-P", type=int, default=8080)
     serve_parser.add_argument("--rate-limit", "-r", type=int, default=60, help="Requests per minute (0 to disable)")
+    serve_parser.add_argument("--show-ips", "-i", action="store_true", help="Show available network IPs")
     
     # Chat
     chat_parser = subparsers.add_parser("chat", help="Chat")
@@ -206,8 +238,15 @@ def main():
     router.config = config  # Store for key manager
     
     if args.command == "serve":
+        # Show network info if requested
+        if getattr(args, "show_ips", False):
+            print_network_info()
+        
+        # Resolve host
+        host = resolve_host(args.host)
+        
         print(f"📋 Profile: {router.profile_name}")
-        run_server(router, args.host, args.port, args.rate_limit)
+        run_server(router, host, args.port, args.rate_limit)
     
     elif args.command == "chat":
         messages = [{"role": "user", "content": args.message}]
