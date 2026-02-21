@@ -110,6 +110,7 @@ App → PicoRouter → Local (Ollama)
 ## Documentation
 
 - [**Features**](FEATURES.md) — Comparison with OpenRouter, Portkey, LiteLLM
+- [**Privacy Routing**](docs/privacy-routing.md) — ZDR model routing design
 - [**API**](docs/api.md) — OpenAI-compatible endpoints
 - [**CLI**](docs/cli.md) — Command-line reference
 - [**Docker**](docs/docker.md) — Container usage
