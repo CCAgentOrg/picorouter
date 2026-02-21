@@ -1,11 +1,86 @@
 # Install
 
-## Humans
-
-### Quick Install
+## Quick Start
 
 ```bash
-curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash
+# Docker (recommended)
+docker run -p 8080:8080 ccagentorg/picorouter
+
+# pip
+pip install picorouter
+
+# Manual
+git clone https://github.com/CCAgentOrg/picorouter
+cd picorouter
+pip install -r requirements.txt
+python picorouter.py config --example
+python picorouter.py serve
+```
+
+## API Endpoint
+
+```
+http://localhost:8080/v1/chat/completions
+```
+
+## Authentication
+
+```bash
+# With key
+curl -H "Authorization: Bearer pico_xxx" \
+  -X POST http://localhost:8080/v1/chat/completions \
+  -d '{"messages":[{"role":"user","content":"Hi"}]}'
+
+# Without key (if no keys configured)
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -d '{"messages":[{"role":"user","content":"Hi"}]}'
+```
+
+## Control Headers
+
+```bash
+# Force provider
+curl -H "X-PicoRouter-Provider: openai" ...
+
+# Force profile
+curl -H "X-PicoRouter-Profile: coding" ...
+
+# Force local only
+curl -H "X-PicoRouter-Local: true" ...
+
+# Enable YOLO mode
+curl -H "X-PicoRouter-Yolo: true" ...
+```
+
+## Environment Variables
+
+```bash
+# Provider API keys
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIza...
+MISTRAL_API_KEY=...
+COHERE_API_KEY=...
+
+# PicoRouter settings
+PICOROUTER_API_KEY=your-secret
+PICOROUTER_SECRETS_BACKEND=env
+```
+
+## OpenAI-Compatible Client
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8080/v1",
+    api_key="pico_xxx"
+)
+
+response = client.chat.completions.create(
+    model="llama3",
+    messages=[{"role": "user", "content": "Hello"}]
+)
 ```
 
 ### Options
