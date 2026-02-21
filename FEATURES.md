@@ -41,8 +41,8 @@
 | Backend | Type | Use Case |
 |---------|------|----------|
 | JSONL (file) | Local file | Default, simple |
-| Turso/LibSQL | Cloud DB | Persistent, syncable |
 | SQLite | Local DB | Embedded devices |
+| Turso/LibSQL | Local-first (syncs to edge) | Cross-device sync |
 
 ---
 
