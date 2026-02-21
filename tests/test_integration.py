@@ -2,7 +2,8 @@
 
 import pytest
 import asyncio
-from picorouter.providers import LocalProvider, CloudProvider, Router
+from picorouter.providers import LocalProvider, CloudProvider
+from picorouter.router import Router
 
 
 # Only run these if explicitly requested

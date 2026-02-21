@@ -3,7 +3,8 @@
 import pytest
 import asyncio
 from unittest.mock import Mock, patch, AsyncMock
-from picorouter.providers import CloudProvider, LocalProvider, Router, RateLimitError
+from picorouter.providers import CloudProvider, LocalProvider, RateLimitError
+from picorouter.router import Router
 from picorouter.router import analyze_prompt, match_routing_rule
 from picorouter.keys import KeyManager, hash_key, generate_key
 from picorouter.config import load_config, generate_example
