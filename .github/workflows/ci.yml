@@ -21,11 +21,19 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        pip install pytest pytest-asyncio
+        pip install pytest pytest-asyncio pytest-cov
     
-    - name: Run tests
+    - name: Run tests with coverage
       run: |
-        pytest tests/ -v
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: picorouter
+      continue-on-error: true
     
     - name: Check syntax
       run: |
