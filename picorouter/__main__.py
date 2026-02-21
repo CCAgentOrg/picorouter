@@ -6,6 +6,9 @@ Usage:
     python picorouter.py chat -m "message"
     python picorouter.py config --example
     python picorouter.py logs [-s] [-n COUNT]
+    python picorouter.py key add [--name NAME] [--rate-limit N] [--profiles p1,p2]
+    python picorouter.py key list
+    python picorouter.py key remove NAME
 """
 
 import argparse
@@ -16,6 +19,7 @@ from picorouter.config import load_config, find_config, generate_example, save_c
 from picorouter.providers import Router
 from picorouter.logger import Logger
 from picorouter.api import run_server
+from picorouter.keys import KeyManager
 
 
 def create_config_interactive():
@@ -59,6 +63,24 @@ def create_config_interactive():
     config["profiles"]["default"] = profile
     config["default_profile"] = "default"
     
+    # Keys
+    if input("\n🔑 Add API keys now? (y/n) [n]: ").strip().lower() == 'y':
+        config["keys"] = {}
+        km = KeyManager()
+        while True:
+            name = input("  Key name (or Enter to done): ").strip()
+            if not name:
+                break
+            rate = input(f"  Rate limit for {name} (req/min, empty for default): ").strip()
+            rate = int(rate) if rate else 60
+            profiles = input(f"  Allowed profiles (comma, empty for all): ").strip()
+            profiles = [p.strip() for p in profiles.split(",")] if profiles else ["chat", "coding", "yolo"]
+            
+            key = km.add_key(name, rate_limit=rate, profiles=profiles)
+            print(f"  ✅ Key '{name}': {key}")
+        
+        config["keys"] = km.get_config()
+    
     return config
 
 
@@ -71,12 +93,12 @@ def main():
     serve_parser.add_argument("--profile", "-p", default="chat")
     serve_parser.add_argument("--host", default="0.0.0.0")
     serve_parser.add_argument("--port", "-P", type=int, default=8080)
-    serve_parser.add_argument("--api-key", help="Protect API with key (or set PICOROUTER_API_KEY env)")
     serve_parser.add_argument("--rate-limit", "-r", type=int, default=60, help="Requests per minute (0 to disable)")
     
     # Chat
     chat_parser = subparsers.add_parser("chat", help="Chat")
     chat_parser.add_argument("--message", "-m", required=True)
+    chat_parser.add_argument("--profile", "-p", default="chat")
     
     # Config
     config_parser = subparsers.add_parser("config", help="Config")
@@ -88,10 +110,76 @@ def main():
     logs_parser.add_argument("--stats", "-s", action="store_true")
     logs_parser.add_argument("--limit", "-n", type=int, default=20)
     
+    # Key management
+    key_parser = subparsers.add_parser("key", help="API Key management")
+    key_subparsers = key_parser.add_subparsers(dest="key_command")
+    
+    key_add = key_subparsers.add_parser("add", help="Add new API key")
+    key_add.add_argument("--name", "-n", required=True, help="Key name")
+    key_add.add_argument("--rate-limit", "-r", type=int, default=60, help="Requests per minute")
+    key_add.add_argument("--profiles", "-p", help="Allowed profiles (comma-separated)")
+    key_add.add_argument("--readonly", action="store_true", help="Read-only key (chat disabled)")
+    key_add.add_argument("--expires", help="Expiration date (ISO format)")
+    
+    key_list = key_subparsers.add_parser("list", help="List API keys")
+    key_remove = key_subparsers.add_parser("remove", help="Remove API key")
+    key_remove.add_argument("name", help="Key name to remove")
+    
     args = parser.parse_args()
     
     if not args.command:
         parser.print_help()
+        return
+    
+    # Key management commands
+    if args.command == "key":
+        config_path = find_config()
+        if not config_path:
+            print("❌ No config found. Run: python picorouter.py config --example")
+            sys.exit(1)
+        
+        config = load_config()
+        km = KeyManager.from_config(config)
+        
+        if args.key_command == "add":
+            profiles = args.profiles.split(",") if args.profiles else ["chat", "coding", "yolo"]
+            profiles = [p.strip() for p in profiles]
+            key = km.add_key(
+                args.name,
+                rate_limit=args.rate_limit,
+                profiles=profiles,
+                readonly=args.readonly,
+                expires=args.expires
+            )
+            config["keys"] = km.get_config()
+            save_config(config, config_path)
+            print(f"✅ Added key '{args.name}': {key}")
+            print(f"   Rate limit: {args.rate_limit}/min")
+            print(f"   Profiles: {profiles}")
+        
+        elif args.key_command == "list":
+            keys = km.list_keys()
+            if not keys:
+                print("📝 No API keys configured")
+            else:
+                print("🔑 Configured API Keys:")
+                for k in keys:
+                    print(f"   • {k['name']}")
+                    print(f"     Profiles: {k['profiles']}")
+                    print(f"     Rate limit: {k['rate_limit']}/min")
+                    print(f"     Readonly: {k['readonly']}")
+                    if k.get('expires'):
+                        print(f"     Expires: {k['expires']}")
+                    print()
+        
+        elif args.key_command == "remove":
+            if km.remove_key(args.name):
+                config["keys"] = km.get_config()
+                save_config(config, config_path)
+                print(f"✅ Removed key '{args.name}'")
+            else:
+                print(f"❌ Key '{args.name}' not found")
+        
         return
     
     if args.command == "config":
@@ -115,16 +203,11 @@ def main():
     profile_name = getattr(args, "profile", None)
     router = Router(config, profile_name)
     router.logger = Logger()
+    router.config = config  # Store for key manager
     
     if args.command == "serve":
         print(f"📋 Profile: {router.profile_name}")
-        run_server(
-            router, 
-            args.host, 
-            args.port,
-            api_key=args.api_key,
-            rate_limit=args.rate_limit
-        )
+        run_server(router, args.host, args.port, args.rate_limit)
     
     elif args.command == "chat":
         messages = [{"role": "user", "content": args.message}]
@@ -148,7 +231,8 @@ def main():
             for log in logs:
                 ts = log.get("timestamp", "")[:19]
                 status = "✓" if log.get("status") == "success" else "✗"
-                print(f"{status} {ts} | {log.get('provider', '?')[:12]} | {log.get('tokens_used', 0)} tokens")
+                key = log.get("key", "")
+                print(f"{status} {ts} | {key[:10]} | {log.get('provider', '?')[:12]} | {log.get('tokens_used', 0)} tokens")
 
 
 if __name__ == "__main__":

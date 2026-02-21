@@ -1,115 +1,86 @@
 # PicoRouter Example Configuration
-# Copy to picorouter.yaml and customize
+# Copy to picorouter.yaml and edit
 
 profiles:
-  # Default chat profile
   chat:
     local:
       provider: ollama
       endpoint: http://localhost:11434
-      models:
-        - llama3
-        - mistral
+      models: [llama3]
+    
     cloud:
       providers:
         kilo:
-          # Uses KILO_API_KEY environment variable
-          models:
-            - minimax/m2.5:free
-            - z-ai/glm-5:free
+          models: [minimax/m2.5:free]
         openrouter:
-          # Uses OPENROUTER_API_KEY environment variable
-          models:
-            - openrouter/free
+          models: [openrouter/free]
+    
     routing:
       - if: short_prompt
         use_local: true
-        models: [llama3]
       - if: contains_code
         use_local: true
-        models: [llama3]
+        models: [codellama]
+    
     yolo: false
 
-  # Coding profile
   coding:
     local:
       provider: ollama
       endpoint: http://localhost:11434
-      models:
-        - codellama
-        - llama3
+      models: [codellama]
     cloud:
       providers:
         kilo:
-          models:
-            - minimax/m2.5:free
-        groq:
-          # Uses GROQ_API_KEY environment variable
-          models:
-            - llama-3.1-70b-versatile
-            - mixtral-8x7b-32768
+          models: [minimax/m2.5:free]
     routing:
       - if: contains_code
         use_local: true
-        models: [codellama]
-      - if: short_prompt
-        use_local: true
-        models: [llama3]
-    yolo: false
 
-  # YOLO profile - burns everything
   yolo:
     local:
       provider: ollama
       endpoint: http://localhost:11434
-      models:
-        - llama3
-        - codellama
-        - mistral
+      models: [llama3, codellama]
     cloud:
       providers:
         kilo:
-          models:
-            - minimax/m2.5:free
-            - giga-potato
-            - z-ai/glm-5:free
+          models: [minimax/m2.5:free, giga-potato]
         groq:
-          models:
-            - llama-3.1-70b-versatile
-            - mixtral-8x7b-32768
+          models: [llama-3.1-70b-versatile]
         openrouter:
-          models:
-            - openrouter/free
-            - anthropic/claude-3-haiku
+          models: [openrouter/free]
     yolo: true
-
-  # Claw profile - optimized for OpenClaw
-  claw:
-    local:
-      provider: ollama
-      endpoint: http://localhost:11434
-      models:
-        - llama3
-    cloud:
-      providers:
-        kilo:
-          models:
-            - minimax/m2.5:free
-    yolo: false
 
 # Default profile to use
 default_profile: chat
 
-# Server configuration
+# Server settings
 server:
   host: 0.0.0.0
   port: 8080
 
-# Database (optional - Turso/LibSQL)
-database:
-  # Turso remote URL (libsql://... or https://...)
-  # Get from https://turso.so
-  # turso_url: "libsql://your-db.turso.io"
-  
-  # Or local file
-  # local_db: "local.db"
+# API Keys (optional - see docs)
+# keys:
+#   claw:
+#     hash: <generated-hash>
+#     rate_limit: 120
+#     profiles: [chat, coding, claw]
+#     capabilities:
+#       chat: true
+#       models: true
+#       stats: true
+#       logs: true
+#     created: "2025-01-01T00:00:00"
+#
+#   readonly:
+#     hash: <generated-hash>
+#     rate_limit: 30
+#     profiles: [chat]
+#     readonly: true
+#     capabilities:
+#       chat: false
+#       models: true
+#       stats: true
+#       logs: false
+#     created: "2025-01-01T00:00:00"

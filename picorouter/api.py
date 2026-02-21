@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from picorouter.providers import Router
+from picorouter.keys import KeyManager
 
 
 class RateLimiter:
@@ -13,29 +14,33 @@ class RateLimiter:
     
     def __init__(self, requests_per_minute: int = 60):
         self.requests_per_minute = requests_per_minute
-        self.requests = {}  # ip -> [(timestamp, count)]
+        self.requests = {}  # key_name -> [(timestamp)]
     
-    def is_allowed(self, ip: str) -> bool:
+    def is_allowed(self, key_name: str, limit: int = None) -> bool:
+        limit = limit or self.requests_per_minute
         now = time.time()
         minute_ago = now - 60
         
         # Clean old entries
-        if ip in self.requests:
-            self.requests[ip] = [t for t in self.requests[ip] if t > minute_ago]
+        if key_name in self.requests:
+            self.requests[key_name] = [t for t in self.requests[key_name] if t > minute_ago]
         
-        count = len(self.requests.get(ip, []))
+        count = len(self.requests.get(key_name, []))
         
-        if count >= self.requests_per_minute:
+        if count >= limit:
             return False
         
-        self.requests.setdefault(ip, []).append(now)
+        self.requests.setdefault(key_name, []).append(now)
         return True
 
 
 class APIHandler(BaseHTTPRequestHandler):
     router: Router = None
+    key_manager: KeyManager = None
     rate_limiter: RateLimiter = None
-    api_key: str = None
+    
+    # Current authenticated key's capabilities
+    _auth: dict = None
     
     def log_message(self, fmt, *args):
         pass  # Silence default logging
@@ -50,46 +55,81 @@ class APIHandler(BaseHTTPRequestHandler):
         """Send error without internal details."""
         self.send_json({"error": message}, status)
     
-    def check_auth(self) -> bool:
-        """Check API key if configured."""
-        if not self.api_key:
-            return True  # No auth configured
-        
+    def authenticate(self) -> bool:
+        """Authenticate request using API key."""
         auth_header = self.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
-            if token == self.api_key:
-                return True
         
-        return False
+        if not auth_header.startswith("Bearer "):
+            # No auth - check if required
+            if self.key_manager and self.key_manager.keys:
+                self.send_error_json(401, "API key required")
+                return False
+            return True  # No keys configured, allow
+        
+        token = auth_header[7:]
+        
+        if not self.key_manager:
+            # No key manager - accept any key for backward compat
+            return True
+        
+        auth = self.key_manager.validate_key(token)
+        if not auth:
+            self.send_error_json(401, "Invalid API key")
+            return False
+        
+        self._auth = auth
+        return True
+    
+    def check_capability(self, cap: str) -> bool:
+        """Check if authenticated key has capability."""
+        if not self._auth:
+            return True  # No auth, allow all
+        
+        caps = self._auth.get("capabilities", {})
+        return caps.get(cap, False)
+    
+    def check_profile(self, profile: str) -> bool:
+        """Check if key is allowed to use profile."""
+        if not self._auth:
+            return True  # No auth, allow all
+        
+        allowed = self._auth.get("profiles", [])
+        return profile in allowed or "*" in allowed
     
     def check_rate_limit(self) -> bool:
-        """Check rate limit."""
+        """Check rate limit for authenticated key."""
         if not self.rate_limiter:
             return True
         
-        ip = self.client_address[0]
-        return self.rate_limiter.is_allowed(ip)
+        key_name = self._auth.get("name", "anonymous") if self._auth else "anonymous"
+        limit = self._auth.get("rate_limit") if self._auth else None
+        
+        return self.rate_limiter.is_allowed(key_name, limit)
     
     def do_GET(self):
-        # Auth check for protected endpoints
-        if self.path in ["/stats", "/logs"]:
-            if not self.check_auth():
-                self.send_error_json(401, "Unauthorized")
-                return
+        if not self.authenticate():
+            return
         
-        # Rate limit check
         if not self.check_rate_limit():
             self.send_error_json(429, "Rate limit exceeded")
             return
         
         if self.path == "/v1/models":
+            if not self.check_capability("models"):
+                self.send_error_json(403, "Capability not allowed")
+                return
             self.handle_models()
         elif self.path == "/health":
             self.send_json({"status": "ok"})
         elif self.path == "/stats":
+            if not self.check_capability("stats"):
+                self.send_error_json(403, "Capability not allowed")
+                return
             self.send_json(self.router.logger.get_stats())
         elif self.path == "/logs":
+            if not self.check_capability("logs"):
+                self.send_error_json(403, "Capability not allowed")
+                return
             limit = 50
             if "?" in self.path:
                 try:
@@ -103,7 +143,9 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_error_json(404, "Not found")
     
     def do_POST(self):
-        # Rate limit check
+        if not self.authenticate():
+            return
+        
         if not self.check_rate_limit():
             self.send_error_json(429, "Rate limit exceeded")
             return
@@ -142,6 +184,16 @@ class APIHandler(BaseHTTPRequestHandler):
         self.send_json({"object": "list", "data": models})
     
     def handle_chat(self, data: dict):
+        if not self.check_capability("chat"):
+            self.send_error_json(403, "Chat not allowed")
+            return
+        
+        # Check profile access
+        profile = data.get("profile", self.router.profile_name)
+        if not self.check_profile(profile):
+            self.send_error_json(403, f"Profile '{profile}' not allowed")
+            return
+        
         # Validate messages
         messages = data.get("messages", [])
         if not messages:
@@ -160,7 +212,7 @@ class APIHandler(BaseHTTPRequestHandler):
         model = data.get("model", "")
         
         # Whitelist allowed parameters
-        allowed = {"temperature", "max_tokens", "top_p", "stream", "stop"}
+        allowed = {"temperature", "max_tokens", "top_p", "stream", "stop", "profile"}
         kwargs = {k: v for k, v in data.items() if k in allowed}
         
         # Validate numeric params
@@ -173,7 +225,7 @@ class APIHandler(BaseHTTPRequestHandler):
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(self.router.chat(messages, **kwargs))
+            result = loop.run_until_complete(self.router.chat(messages, profile=profile, **kwargs))
             loop.close()
             
             content = result.get("message", {}).get("content", "")
@@ -193,7 +245,8 @@ class APIHandler(BaseHTTPRequestHandler):
             
             self.router.logger.log({
                 "timestamp": datetime.now().isoformat(),
-                "profile": self.router.profile_name,
+                "profile": profile,
+                "key": self._auth.get("name", "anonymous") if self._auth else "none",
                 "provider": "unknown",
                 "model": model or "auto",
                 "tokens_used": result.get("usage", {}).get("total_tokens", 0),
@@ -203,16 +256,15 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_json(response)
             
         except Exception as e:
-            # Log full error server-side only
             self.router.logger.log({
                 "timestamp": datetime.now().isoformat(),
-                "profile": self.router.profile_name,
+                "profile": profile,
+                "key": self._auth.get("name", "anonymous") if self._auth else "none",
                 "provider": "failed",
                 "model": model or "auto",
                 "status": "error",
                 "error": "Request failed"
             })
-            # Send generic error to client
             self.send_error_json(500, "Request failed")
 
 
@@ -220,21 +272,28 @@ def run_server(
     router: Router, 
     host: str = "0.0.0.0", 
     port: int = 8080,
-    api_key: str = None,
     rate_limit: int = 60
 ):
     """Run the HTTP server."""
     APIHandler.router = router
+    
+    # Initialize key manager from config
+    config = router.config
+    APIHandler.key_manager = KeyManager.from_config(config)
+    
+    # Initialize rate limiter
     APIHandler.rate_limiter = RateLimiter(rate_limit) if rate_limit > 0 else None
-    APIHandler.api_key = api_key or os.getenv("PICOROUTER_API_KEY")
     
     server = HTTPServer((host, port), APIHandler)
     print(f"🚀 PicoRouter on http://{host}:{port}")
     print(f"   Endpoint: http://{host}:{port}/v1")
     
-    if APIHandler.api_key:
-        print("   🔐 API Key: enabled")
+    if APIHandler.key_manager.keys:
+        print(f"   🔑 Keys: {len(APIHandler.key_manager.keys)} configured")
+    else:
+        print("   ⚠️  No API keys configured (open access)")
+    
     if APIHandler.rate_limiter:
-        print(f"   ⚡ Rate limit: {rate_limit}/min")
+        print(f"   ⚡ Rate limit: {rate_limit}/min (global)")
     
     server.serve_forever()
