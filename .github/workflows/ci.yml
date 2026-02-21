@@ -48,6 +48,39 @@ jobs:
     - name: Lint
       run: flake8 picorouter/ --max-line-length=100 --ignore=E501,W503 || true
 
+  build-binary:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install PyInstaller
+      run: pip install pyinstaller
+    
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+    
+    - name: Build binary
+      run: |
+        pyinstaller --onefile --name picorouter \
+          --add-data "picorouter:picorouter" \
+          --hidden-import yaml \
+          --hidden-import httpx \
+          --hidden-import requests \
+          picorouter.py
+    
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: picorouter-binary
+        path: dist/picorouter
+
   integration:
     runs-on: ubuntu-latest
     if: false  # Enable manually or on schedule
