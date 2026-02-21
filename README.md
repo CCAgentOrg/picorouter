@@ -4,6 +4,8 @@
 
 Bring all your models together — configure routing profiles, and PicoRouter automatically picks the best one for each request. OpenRouter.ai itself is just one provider in the chain.
 
+**One router, many apps** — Run PicoRouter locally, then point OpenClaw, VSCode, Cursor, Continue, or any LLM app to `http://localhost:8080/v1`.
+
 [🌀 Pico family](https://github.com/cashlessconsumer) — PicoClaw, PicoLM, PicoRouter
 
 ## Why PicoRouter?
