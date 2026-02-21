@@ -1,0 +1,106 @@
+# PicoRouter Example Configuration
+# Copy to picorouter.yaml and customize
+
+profiles:
+  # Default chat profile
+  chat:
+    local:
+      provider: ollama
+      endpoint: http://localhost:11434
+      models:
+        - llama3
+        - mistral
+    cloud:
+      providers:
+        kilo:
+          # Uses KILO_API_KEY environment variable
+          models:
+            - minimax/m2.5:free
+            - z-ai/glm-5:free
+        openrouter:
+          # Uses OPENROUTER_API_KEY environment variable
+          models:
+            - openrouter/free
+    routing:
+      - if: short_prompt
+        use_local: true
+        models: [llama3]
+      - if: contains_code
+        use_local: true
+        models: [llama3]
+    yolo: false
+
+  # Coding profile
+  coding:
+    local:
+      provider: ollama
+      endpoint: http://localhost:11434
+      models:
+        - codellama
+        - llama3
+    cloud:
+      providers:
+        kilo:
+          models:
+            - minimax/m2.5:free
+        groq:
+          # Uses GROQ_API_KEY environment variable
+          models:
+            - llama-3.1-70b-versatile
+            - mixtral-8x7b-32768
+    routing:
+      - if: contains_code
+        use_local: true
+        models: [codellama]
+      - if: short_prompt
+        use_local: true
+        models: [llama3]
+    yolo: false
+
+  # YOLO profile - burns everything
+  yolo:
+    local:
+      provider: ollama
+      endpoint: http://localhost:11434
+      models:
+        - llama3
+        - codellama
+        - mistral
+    cloud:
+      providers:
+        kilo:
+          models:
+            - minimax/m2.5:free
+            - giga-potato
+            - z-ai/glm-5:free
+        groq:
+          models:
+            - llama-3.1-70b-versatile
+            - mixtral-8x7b-32768
+        openrouter:
+          models:
+            - openrouter/free
+            - anthropic/claude-3-haiku
+    yolo: true
+
+  # Claw profile - optimized for OpenClaw
+  claw:
+    local:
+      provider: ollama
+      endpoint: http://localhost:11434
+      models:
+        - llama3
+    cloud:
+      providers:
+        kilo:
+          models:
+            - minimax/m2.5:free
+    yolo: false
+
+# Default profile to use
+default_profile: chat
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8080
