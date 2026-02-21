@@ -2,6 +2,8 @@
 
 **A lean, intelligent router** that manages the cognitive overhead of managing API keys, rate limits, privacy, and model switching.
 
+**Bring all your models together** — configure routing profiles based on your presets, and PicoRouter automatically picks the best one for each request.
+
 [🌀 Pico family](https://github.com/cashlessconsumer) — PicoClaw, PicoLM, PicoRouter
 
 ## Why PicoRouter?
