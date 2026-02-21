@@ -105,6 +105,15 @@ server:
   host: 0.0.0.0
   port: 8080
 
+# Database (optional - Turso/LibSQL)
+database:
+  # Turso remote URL (libsql://... or https://...)
+  # Get from https://turso.so
+  # turso_url: "libsql://your-db.turso.io"
+  
+  # Or local file
+  # local_db: "local.db"
+
 # Search configuration (for picorouter-search MCP)
 search:
   # Your SearXNG instance

@@ -33,17 +33,54 @@ DEFAULT_SEARXNG = "https://ccsearxng.zeabur.app"
 
 
 class SearchLogger:
-    """Simple search request logger."""
+    """Simple search request logger - supports Turso."""
     
-    def __init__(self):
-        self.log_file = Path("logs/search.jsonl")
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, turso_url: str = None):
+        self.turso_url = turso_url
+        self.use_turso = bool(turso_url)
+        
+        if self.use_turso:
+            self._init_turso()
+        else:
+            self.log_file = Path("logs/search.jsonl")
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
         
         self.stats = {
             "total_searches": 0,
             "total_results": 0,
             "errors": 0,
         }
+    
+    def _init_turso(self):
+        """Initialize Turso database."""
+        try:
+            import libsql_client
+            self._turso_exec("""
+                CREATE TABLE IF NOT EXISTS search_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    query TEXT,
+                    results_count INTEGER DEFAULT 0,
+                    error TEXT
+                )
+            """)
+        except Exception as e:
+            print(f"Turso init failed: {e}, using JSONL", file=sys.stderr)
+            self.use_turso = False
+            self.log_file = Path("logs/search.jsonl")
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    def _turso_exec(self, sql: str):
+        """Execute SQL on Turso."""
+        if not self.use_turso:
+            return
+        try:
+            import libsql_client
+            conn = libsql_client.connect(self.turso_url)
+            conn.execute(sql)
+            conn.close()
+        except Exception as e:
+            print(f"Turso error: {e}", file=sys.stderr)
     
     def log(self, query: str, results_count: int, error: str = None):
         entry = {
@@ -53,8 +90,15 @@ class SearchLogger:
             "error": error,
         }
         
-        with open(self.log_file, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+        if self.use_turso:
+            self._turso_exec(f"""
+                INSERT INTO search_logs (timestamp, query, results_count, error)
+                VALUES ('{entry['timestamp']}', '{entry['query']}', 
+                    {entry['results_count']}, '{entry.get('error', '')}')
+            """)
+        else:
+            with open(self.log_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
         
         self.stats["total_searches"] += 1
         if error:
@@ -184,13 +228,20 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             if not searxng_client:
                 # Load config
                 base_url = DEFAULT_SEARXNG
+                turso_url = None
                 for config_path in CONFIG_PATHS:
                     if config_path.exists():
                         with open(config_path) as f:
                             config = yaml.safe_load(f)
                             base_url = config.get("search", {}).get("searxng_url", DEFAULT_SEARXNG)
+                            turso_url = config.get("database", {}).get("turso_url")
                             break
                 searxng_client = SearXNGClient(base_url)
+                
+                # Re-init logger with Turso if configured
+                if turso_url:
+                    global search_logger
+                    search_logger = SearchLogger(turso_url)
             
             result = await searxng_client.search(
                 query, engines=engines, language=language, num_results=num_results

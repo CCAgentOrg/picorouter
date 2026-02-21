@@ -162,6 +162,10 @@ python mcpsearch.py
 ```yaml
 search:
   searxng_url: https://ccsearxng.zeabur.app
+
+# Optional: Turso database for logs
+database:
+  turso_url: "libsql://your-db.turso.io"
 ```
 
 ### Usage in Claude Code / Continue:

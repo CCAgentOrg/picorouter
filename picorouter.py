@@ -258,7 +258,7 @@ class RateLimitError(Exception):
 
 
 class RequestLogger:
-    """Simple request logger for usage tracking."""
+    """Simple request logger for usage tracking - now with Turso support."""
     
     # Approximate costs per 1M tokens (USD)
     COST_PER_MILLION = {
@@ -270,9 +270,16 @@ class RequestLogger:
         "default": 0.50,  # Fallback estimate
     }
     
-    def __init__(self, log_file: str = "logs/requests.jsonl"):
+    def __init__(self, log_file: str = "logs/requests.jsonl", turso_url: str = None):
         self.log_file = Path(log_file)
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        self.turso_url = turso_url
+        self.use_turso = bool(turso_url)
+        
+        if self.use_turso:
+            self._init_turso()
+        else:
+            # Fallback to JSONL
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
         
         # In-memory stats for quick dashboard
         self.stats = {
@@ -286,13 +293,81 @@ class RequestLogger:
             "errors": 0,
         }
     
+    def _init_turso(self):
+        """Initialize Turso database."""
+        try:
+            import libsql_client
+            # Create table if not exists
+            self._turso_exec(f"""
+                CREATE TABLE IF NOT EXISTS requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    request_id TEXT,
+                    profile TEXT,
+                    provider TEXT,
+                    model TEXT,
+                    routing TEXT,
+                    input_tokens INTEGER DEFAULT 0,
+                    output_tokens INTEGER DEFAULT 0,
+                    tokens_used INTEGER DEFAULT 0,
+                    duration_ms INTEGER DEFAULT 0,
+                    cost_usd REAL DEFAULT 0,
+                    status TEXT,
+                    error TEXT
+                )
+            """)
+            # Create stats table
+            self._turso_exec(f"""
+                CREATE TABLE IF NOT EXISTS search_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    query TEXT,
+                    results_count INTEGER DEFAULT 0,
+                    error TEXT
+                )
+            """)
+        except Exception as e:
+            print(f"Turso init failed: {e}, falling back to JSONL", file=sys.stderr)
+            self.use_turso = False
+            self.log_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    def _turso_exec(self, sql: str):
+        """Execute SQL on Turso."""
+        if not self.use_turso:
+            return
+        try:
+            import libsql_client
+            # Use HTTP endpoint for remote Turso
+            conn = libsql_client.connect(self.turso_url)
+            conn.execute(sql)
+            conn.close()
+        except Exception as e:
+            print(f"Turso error: {e}", file=sys.stderr)
+    
     def log(self, entry: dict):
-        """Log a request entry to file and update stats."""
-        # Write to JSONL
-        with open(self.log_file, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+        """Log a request entry to database/file and update stats."""
+        # Always update in-memory stats
+        self._update_stats(entry)
         
-        # Update stats
+        if self.use_turso:
+            # Write to Turso
+            self._turso_exec(f"""
+                INSERT INTO requests (timestamp, request_id, profile, provider, model, routing,
+                    input_tokens, output_tokens, tokens_used, duration_ms, cost_usd, status, error)
+                VALUES ('{entry.get("timestamp")}', '{entry.get("request_id")}', 
+                    '{entry.get("profile")}', '{entry.get("provider")}', '{entry.get("model")}',
+                    '{entry.get("routing")}', {entry.get("input_tokens", 0)}, 
+                    {entry.get("output_tokens", 0)}, {entry.get("tokens_used", 0)},
+                    {entry.get("duration_ms", 0)}, {entry.get("cost_usd", 0)},
+                    '{entry.get("status")}', '{entry.get("error", "")}')
+            """)
+        else:
+            # Write to JSONL
+            with open(self.log_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+    
+    def _update_stats(self, entry: dict):
+        """Update in-memory stats."""
         self.stats["total_requests"] += 1
         
         provider = entry.get("provider", "unknown")
@@ -313,7 +388,6 @@ class RequestLogger:
         # Calculate cost
         cost = entry.get("cost_usd", 0)
         if cost is None:
-            # Estimate cost
             cost = (tokens / 1_000_000) * self.COST_PER_MILLION.get(provider, 0.50)
         self.stats["total_cost_usd"] += cost
         
@@ -322,10 +396,23 @@ class RequestLogger:
     
     def get_stats(self) -> dict:
         """Get current stats."""
+        # If using Turso, could aggregate from DB here
         return self.stats
     
     def get_recent(self, limit: int = 50) -> list:
         """Get recent requests."""
+        if self.use_turso:
+            try:
+                import libsql_client
+                conn = libsql_client.connect(self.turso_url)
+                results = conn.execute(
+                    f"SELECT * FROM requests ORDER BY id DESC LIMIT {limit}"
+                )
+                conn.close()
+                return [dict(row) for row in results]
+            except:
+                return []
+        
         if not self.log_file.exists():
             return []
         
