@@ -5,8 +5,37 @@ from pathlib import Path
 from datetime import datetime
 
 COST_PER_MILLION = {
-    "local:ollama": 0, "local:lmstudio": 0,
-    "kilo": 0, "groq": 0.18, "openrouter": 0, "default": 0.50
+    # Local (free)
+    "local:ollama": 0, 
+    "local:lmstudio": 0,
+    
+    # Free / Low-cost
+    "kilo": 0,
+    "groq": 0.18,
+    "openrouter": 0,
+    
+    # Major providers (approximate, check for latest)
+    "openai": 0.60,      # gpt-4o-mini
+    "anthropic": 0.80,   # claude-3-haiku
+    "google": 0.00,      # gemini-1.5-flash (free tier)
+    "mistral": 0.40,     # mistral-small
+    "cohere": 0.30,      # command-r-plus
+    "ai21": 0.40,        # jamba-1.5-mini
+    
+    # Aggregators
+    "together": 0.60,
+    "deepinfra": 0.44,
+    "fireworks": 0.60,
+    "anyscale": 0.50,
+    
+    # Replicate (varies by model)
+    "replicate": 0.50,
+    
+    # Azure (varies by deployment)
+    "azure": 1.00,
+    
+    # Default
+    "default": 0.50
 }
 
 

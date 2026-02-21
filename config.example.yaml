@@ -10,10 +10,29 @@ profiles:
     
     cloud:
       providers:
+        # Free / Low-cost
         kilo:
           models: [minimax/m2.5:free]
-        openrouter:
-          models: [openrouter/free]
+        groq:
+          models: [llama-3.1-70b-versatile]
+        
+        # Major providers (add your API keys)
+        # openai:
+        #   models: [gpt-4o-mini, gpt-4o]
+        # anthropic:
+        #   models: [claude-3-haiku-20240307]
+        # google:
+        #   models: [gemini-1.5-flash]
+        # mistral:
+        #   models: [mistral-small-latest]
+        # cohere:
+        #   models: [command-r-plus]
+        
+        # Aggregators
+        # together:
+        #   models: [meta-llama/Llama-3-70b-chat-hf]
+        # deepinfra:
+        #   models: [meta-llama/Llama-3-70b-instruct]
     
     routing:
       - if: short_prompt
@@ -45,7 +64,7 @@ profiles:
     cloud:
       providers:
         kilo:
-          models: [minimax/m2.5:free, giga-potato]
+          models: [minimax/m2.5:free]
         groq:
           models: [llama-3.1-70b-versatile]
         openrouter:
@@ -60,27 +79,25 @@ server:
   host: 0.0.0.0
   port: 8080
 
-# API Keys (optional - see docs)
+# API Keys - set as environment variables:
+# export KILO_API_KEY="sk-..."
+# export GROQ_API_KEY="gsk_..."
+# export OPENROUTER_API_KEY="sk-or-..."
+# export OPENAI_API_KEY="sk-..."
+# export ANTHROPIC_API_KEY="sk-ant-..."
+# export GOOGLE_API_KEY="AIza..."
+# export MISTRAL_API_KEY="..."
+# export COHERE_API_KEY="..."
+# export TOGETHER_API_KEY="..."
+# export DEEPINFRA_API_KEY="..."
+# export FIREWORKS_API_KEY="..."
+# export ANYSCALE_API_KEY="..."
+# export REPLICATE_API_KEY="r8_..."
+# export AZURE_API_KEY="..."
+
+# Or add directly (less secure):
 # keys:
 #   claw:
 #     hash: <generated-hash>
 #     rate_limit: 120
 #     profiles: [chat, coding, claw]
-#     capabilities:
-#       chat: true
-#       models: true
-#       stats: true
-#       logs: true
-#     created: "2025-01-01T00:00:00"
-#
-#   readonly:
-#     hash: <generated-hash>
-#     rate_limit: 30
-#     profiles: [chat]
-#     readonly: true
-#     capabilities:
-#       chat: false
-#       models: true
-#       stats: true
-#       logs: false
-#     created: "2025-01-01T00:00:00"
