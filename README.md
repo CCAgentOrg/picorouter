@@ -183,6 +183,40 @@ Add to your MCP config:
 
 Then use: `Search the web for...` in your AI assistant.
 
+## PicoSearch - Multi-Provider Web Search
+
+Standalone web search with provider fallback + Turso logging:
+
+```bash
+# CLI search
+python picosearch.py -q "Python async best practices"
+
+# Run as MCP server
+python picosearch.py --mcp
+
+# View stats
+python picosearch.py --stats
+```
+
+### Providers (tried in order):
+1. **SearXNG** — Your self-hosted instance (free, private)
+2. **Brave** — API-based (needs key)
+3. **DuckDuckGo** — Free fallback
+
+### Config (picorouter.yaml):
+```yaml
+search:
+  searxng_url: https://ccsearxng.zeabur.app
+  brave_api_key: "your-brave-key"
+
+database:
+  turso_url: "libsql://your-db.turso.io"
+```
+
+### Logs to Turso:
+- `search_logs` table with query, provider, results_count, duration_ms, error
+- Falls back to JSONL if no Turso
+
 ## Use Cases
 
 1. **Private LLM for sensitive work** — Local Ollama, no data leaves your machine

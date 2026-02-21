@@ -7,8 +7,11 @@ httpx>=0.24.0
 # Database (Turso/LibSQL)
 libsql-client>=0.6.0
 
-# MCP Server (for picorouter-search)
+# MCP Server (for picosearch)
 mcp>=1.0.0
+
+# Pydantic (for data models)
+pydantic>=2.0
 
 # Optional: for better async support
 # aiohttp>=3.8.0
