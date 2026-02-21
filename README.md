@@ -131,46 +131,6 @@ Stats include:
 - Total requests, tokens, cost (USD)
 - By routing (seamless/yolo), provider, model, profile
 
-## PicoSearch - Multi-Provider Web Search
-
-```bash
-# CLI search
-python picosearch.py -q "query"
-
-# MCP server
-python picosearch.py --mcp
-
-# Stats
-python picosearch.py --stats
-```
-
-### Providers (fallback chain):
-1. **SearXNG** — Your instance (free, private)
-2. **Brave** — API (needs key)
-3. **DuckDuckGo** — Free fallback
-
-### Config:
-```yaml
-search:
-  searxng_url: https://ccsearxng.zeabur.app
-  brave_api_key: "your-key"
-
-database:
-  turso_url: "libsql://your-db.turso.io"
-```
-
-### MCP Integration:
-```json
-{
-  "mcpServers": {
-    "picosearch": {
-      "command": "python",
-      "args": ["/path/to/picorouter/picosearch.py", "--mcp"]
-    }
-  }
-}
-```
-
 ## Use Cases
 
 1. **Private LLM for sensitive work** — Local Ollama, no data leaves your machine

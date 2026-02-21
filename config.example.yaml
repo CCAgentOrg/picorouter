@@ -113,8 +113,3 @@ database:
   
   # Or local file
   # local_db: "local.db"
-
-# Search configuration (for picorouter-search MCP)
-search:
-  # Your SearXNG instance
-  searxng_url: https://ccsearxng.zeabur.app
