@@ -13,6 +13,39 @@
 
 ---
 
+## Supported Providers
+
+| Provider | Type | API Key Env |
+|----------|------|-------------|
+| Ollama | Local | - |
+| LM Studio | Local | - |
+| Kilo | Cloud (free) | `KILO_API_KEY` |
+| Groq | Cloud | `GROQ_API_KEY` |
+| OpenRouter | Aggregator | `OPENROUTER_API_KEY` |
+| OpenAI | Cloud | `OPENAI_API_KEY` |
+| Anthropic | Cloud | `ANTHROPIC_API_KEY` |
+| Google (Gemini) | Cloud | `GOOGLE_API_KEY` |
+| Mistral | Cloud | `MISTRAL_API_KEY` |
+| Cohere | Cloud | `COHERE_API_KEY` |
+| AI21 | Cloud | `AI21_API_KEY` |
+| Together | Aggregator | `TOGETHER_API_KEY` |
+| DeepInfra | Aggregator | `DEEPINFRA_API_KEY` |
+| Fireworks | Aggregator | `FIREWORKS_API_KEY` |
+| Replicate | Cloud | `REPLICATE_API_KEY` |
+| Azure | Enterprise | `AZURE_API_KEY` |
+
+---
+
+## Storage Backends
+
+| Backend | Type | Use Case |
+|---------|------|----------|
+| JSONL (file) | Local file | Default, simple |
+| Turso/LibSQL | Cloud DB | Persistent, syncable |
+| SQLite | Local DB | Embedded devices |
+
+---
+
 ## PicoRouter vs Competitors
 
 | Feature | OpenRouter | Portkey | LiteLLM | PicoRouter |
