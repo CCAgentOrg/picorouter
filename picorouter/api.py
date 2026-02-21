@@ -6,8 +6,10 @@ import time
 import logging
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from picorouter.providers import Router
+from picorouter.router import Router
 from picorouter.keys import KeyManager
+from picorouter.web_settings import get_settings_html
+from picorouter.config import load_config, save_config, find_config
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +151,14 @@ class APIHandler(BaseHTTPRequestHandler):
                     logger.debug(f"Invalid limit parameter in query string: {e}")
                     limit = 50
             self.send_json({"logs": self.router.logger.get_recent(limit)})
+        elif self.path == "/settings" or self.path == "/settings/":
+            self.send_html(get_settings_html())
+        elif self.path == "/settings/config":
+            self.handle_settings_config()
+        elif self.path.startswith("/settings/keys"):
+            self.handle_settings_keys()
+        elif self.path == "/v1/providers":
+            self.handle_providers()
         else:
             self.send_error_json(404, "Not found")
 

@@ -16,7 +16,7 @@ import asyncio
 import sys
 
 from picorouter.config import load_config, find_config, generate_example, save_config
-from picorouter.providers import Router
+from picorouter.router import Router
 from picorouter.logger import Logger
 from picorouter.api import run_server
 from picorouter.keys import KeyManager

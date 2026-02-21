@@ -8,7 +8,7 @@ Easy to add new providers:
 import asyncio
 import os
 import httpx
-from typing import Optional
+from typing import Optional, List, Dict
 from picorouter.secrets import SecretsManager, PROVIDER_KEYS
 
 _secrets = SecretsManager()
@@ -30,7 +30,6 @@ PROVIDERS = {
         "endpoint": None,  # Handled by LocalProvider
         "class": "local",
     },
-    
     # Free / Low-cost
     "kilo": {
         "endpoint": "https://api.kilo.ai/api/openrouter/",
@@ -44,7 +43,6 @@ PROVIDERS = {
         "endpoint": "https://openrouter.ai/api/v1/",
         "default_models": ["openrouter/free"],
     },
-    
     # Major providers
     "openai": {
         "endpoint": "https://api.openai.com/v1/",
@@ -72,7 +70,6 @@ PROVIDERS = {
         "endpoint": "https://api.ai21.com/v1/",
         "default_models": ["jamba-1.5-mini"],
     },
-    
     # Aggregators
     "together": {
         "endpoint": "https://api.together.ai/v1/",
@@ -100,7 +97,6 @@ PROVIDERS = {
         "default_models": [],
         "api_style": "azure",
     },
-    
     # Virtual providers
     "picorouter/privacy": {"class": "virtual", "route": "local_only"},
     "picorouter/free": {"class": "virtual", "route": "free_providers"},
@@ -121,7 +117,7 @@ def list_providers() -> List:
 
 def register_provider(name: str, endpoint: str, default_models: list = None, **kwargs):
     """Register a new provider.
-    
+
     Example:
         register_provider(
             "myprovider",
@@ -132,7 +128,7 @@ def register_provider(name: str, endpoint: str, default_models: list = None, **k
     PROVIDERS[name.lower()] = {
         "endpoint": endpoint,
         "default_models": default_models or [],
-        **kwargs
+        **kwargs,
     }
 
 
@@ -140,25 +136,27 @@ def register_provider(name: str, endpoint: str, default_models: list = None, **k
 # Base Provider
 # =============================================================================
 
+
 class RateLimitError(Exception):
     """Rate limit exceeded."""
+
     pass
 
 
 class BaseProvider:
     """Base provider class."""
-    
+
     name = "base"
-    
+
     def __init__(self, config: dict):
         self.config = config
         self.endpoint = config.get("endpoint")
         self.api_key = config.get("api_key")
         self.models = config.get("models", [])
-    
+
     async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         raise NotImplementedError
-    
+
     async def list_models(self) -> List:
         return self.models
 
@@ -167,49 +165,50 @@ class BaseProvider:
 # Local Provider (Ollama, LM Studio)
 # =============================================================================
 
+
 class LocalProvider(BaseProvider):
     """Local model provider."""
-    
+
     name = "local"
-    
+
     def __init__(self, config: dict):
         provider = config.get("provider", "ollama")
-        
+
         if provider == "lmstudio":
-            self.endpoint = config.get("endpoint", "http://localhost:1234").rstrip('/')
+            self.endpoint = config.get("endpoint", "http://localhost:1234").rstrip("/")
         else:
-            self.endpoint = config.get("endpoint", "http://localhost:11434").rstrip('/')
-        
+            self.endpoint = config.get("endpoint", "http://localhost:11434").rstrip("/")
+
         self.provider = provider
         self.models = config.get("models", ["llama3"])
-    
+
     async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         model = model or self.models[0]
-        
+
         if self.provider == "lmstudio":
             url = f"{self.endpoint}/v1/chat/completions"
             payload = {"model": model, "messages": messages, **kwargs}
         else:
             url = f"{self.endpoint}/api/chat"
             payload = {"model": model, "messages": messages, **kwargs}
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
             return resp.json()
-    
+
     async def list_models(self) -> List:
         if self.provider == "lmstudio":
             url = f"{self.endpoint}/v1/models"
         else:
             url = f"{self.endpoint}/api/tags"
-        
+
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json()
-                
+
                 if self.provider == "lmstudio":
                     return [m.get("id") for m in data.get("data", [])]
                 else:
@@ -222,34 +221,35 @@ class LocalProvider(BaseProvider):
 # Cloud Provider (OpenAI-compatible)
 # =============================================================================
 
+
 class CloudProvider(BaseProvider):
     """Cloud API provider (OpenAI-compatible)."""
-    
+
     name = "cloud"
-    
+
     def __init__(self, name: str, config: dict):
         self.name = name
         info = PROVIDERS.get(name, {})
-        
+
         self.endpoint = config.get("base_url") or info.get("endpoint") or ""
         self.api_key = config.get("api_key") or _secrets.get_provider_key(name)
         self.models = config.get("models", []) or info.get("default_models", [])
-        
+
         self.api_style = info.get("api_style", "openai")
-        
+
         # Headers
         self.headers = config.get("headers", {})
         if self.api_key and "Authorization" not in self.headers:
             self.headers["Authorization"] = f"Bearer {self.api_key}"
-        
+
         if self.name == "anthropic":
             self.headers["anthropic-version"] = "2023-06-01"
             if self.api_key:
                 self.headers["x-api-key"] = self.api_key
-    
+
     async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         model = model or (self.models[0] if self.models else "gpt-3.5-turbo")
-        
+
         # Provider-specific handling
         if self.api_style == "anthropic":
             return await self._anthropic_chat(messages, model, **kwargs)
@@ -261,185 +261,196 @@ class CloudProvider(BaseProvider):
             return await self._azure_chat(messages, model, **kwargs)
         else:
             return await self._openai_chat(messages, model, **kwargs)
-    
+
     async def _openai_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Standard OpenAI-compatible chat."""
         payload = {
             "model": model,
             "messages": messages,
-            **{k: v for k, v in kwargs.items() 
-               if k in ["temperature", "max_tokens", "top_p", "stream", "stop"]}
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k in ["temperature", "max_tokens", "top_p", "stream", "stop"]
+            },
         }
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             try:
                 resp = await client.post(
                     f"{self.endpoint}chat/completions",
                     json=payload,
-                    headers=self.headers
+                    headers=self.headers,
                 )
-                
+
                 if resp.status_code == 429:
                     raise RateLimitError(f"Rate limited by {self.name}")
-                
+
                 resp.raise_for_status()
                 return resp.json()
-            
+
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 429:
                     raise RateLimitError(f"Rate limited by {self.name}")
                 raise
-    
+
     async def _anthropic_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Anthropic API."""
         system = ""
         anthropic_messages = []
-        
+
         for msg in messages:
             if msg.get("role") == "system":
                 system = msg.get("content", "")
             elif msg.get("role") != "system":
                 anthropic_messages.append(msg)
-        
+
         payload = {
             "model": model,
             "messages": anthropic_messages,
             "max_tokens": kwargs.get("max_tokens", 1024),
         }
-        
+
         if system:
             payload["system"] = system
-        
+
         headers = dict(self.headers)
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
-                f"{self.endpoint}messages",
-                json=payload,
-                headers=headers
+                f"{self.endpoint}messages", json=payload, headers=headers
             )
-            
+
             if resp.status_code == 429:
                 raise RateLimitError(f"Rate limited by {self.name}")
-            
+
             resp.raise_for_status()
             data = resp.json()
-            
+
             return {
-                "choices": [{
-                    "message": {
-                        "role": "assistant",
-                        "content": data.get("content", [{"text": ""}])[0].get("text", "")
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": data.get("content", [{"text": ""}])[0].get(
+                                "text", ""
+                            ),
+                        }
                     }
-                }],
+                ],
                 "usage": {
                     "prompt_tokens": data.get("usage", {}).get("input_tokens", 0),
                     "completion_tokens": data.get("usage", {}).get("output_tokens", 0),
-                    "total_tokens": data.get("usage", {}).get("input_tokens", 0) + data.get("usage", {}).get("output_tokens", 0)
-                }
+                    "total_tokens": data.get("usage", {}).get("input_tokens", 0)
+                    + data.get("usage", {}).get("output_tokens", 0),
+                },
             }
-    
+
     async def _google_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Google Gemini API."""
         contents = []
         for msg in messages:
-            contents.append({
-                "role": "user" if msg.get("role") == "user" else "model",
-                "parts": [{"text": msg.get("content", "")}]
-            })
-        
+            contents.append(
+                {
+                    "role": "user" if msg.get("role") == "user" else "model",
+                    "parts": [{"text": msg.get("content", "")}],
+                }
+            )
+
         payload = {
             "contents": contents,
             "generationConfig": {
                 "temperature": kwargs.get("temperature", 0.9),
                 "maxOutputTokens": kwargs.get("max_tokens", 2048),
-            }
+            },
         }
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 f"{self.endpoint}models/{model}:generateContent",
                 json=payload,
-                headers=self.headers
+                headers=self.headers,
             )
-            
+
             if resp.status_code == 429:
                 raise RateLimitError(f"Rate limited by {self.name}")
-            
+
             resp.raise_for_status()
             data = resp.json()
-            
-            content = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            
+
+            content = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+            )
+
             return {
                 "choices": [{"message": {"role": "assistant", "content": content}}],
-                "usage": {"total_tokens": 0}
+                "usage": {"total_tokens": 0},
             }
-    
+
     async def _replicate_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Replicate API."""
-        payload = {
-            "version": model,
-            "input": {"messages": messages, **kwargs}
-        }
-        
+        payload = {"version": model, "input": {"messages": messages, **kwargs}}
+
         headers = dict(self.headers)
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
-                f"{self.endpoint}predictions",
-                json=payload,
-                headers=headers
+                f"{self.endpoint}predictions", json=payload, headers=headers
             )
-            
+
             if resp.status_code == 429:
                 raise RateLimitError(f"Rate limited by {self.name}")
-            
+
             resp.raise_for_status()
             data = resp.json()
-            
+
             while data.get("status") in ["starting", "processing"]:
                 await asyncio.sleep(2)
-                resp = await client.get(f"{self.endpoint}predictions/{data['id']}", headers=headers)
+                resp = await client.get(
+                    f"{self.endpoint}predictions/{data['id']}", headers=headers
+                )
                 data = resp.json()
-            
+
             if data.get("status") == "failed":
                 raise Exception(f"Replicate failed: {data.get('error')}")
-            
+
             output = data.get("output", "")
             if isinstance(output, list):
                 output = output[0] if output else ""
-            
+
             return {
                 "choices": [{"message": {"role": "assistant", "content": str(output)}}],
-                "usage": {"total_tokens": 0}
+                "usage": {"total_tokens": 0},
             }
-    
+
     async def _azure_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Azure OpenAI API."""
         payload = {
             "messages": messages,
-            **{k: v for k, v in kwargs.items() 
-               if k in ["temperature", "max_tokens", "top_p", "stream"]}
+            **{
+                k: v
+                for k, v in kwargs.items()
+                if k in ["temperature", "max_tokens", "top_p", "stream"]
+            },
         }
-        
+
         headers = {"api-key": self.api_key, "Content-Type": "application/json"}
-        
+
         url = self.endpoint.replace("{deployment}", model)
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
-                f"{url}?api-version=2024-02-15-preview",
-                json=payload,
-                headers=headers
+                f"{url}?api-version=2024-02-15-preview", json=payload, headers=headers
             )
-            
+
             if resp.status_code == 429:
                 raise RateLimitError(f"Rate limited by {self.name}")
-            
+
             resp.raise_for_status()
             return resp.json()
-    
+
     async def list_models(self) -> List:
         return self.models
 
@@ -448,18 +459,19 @@ class CloudProvider(BaseProvider):
 # Provider Factory
 # =============================================================================
 
+
 def create_provider(name: str, config: dict) -> BaseProvider:
     """Create a provider instance."""
     name = name.lower()
-    
+
     # Check if virtual provider
     if name.startswith("picorouter/"):
         return VirtualProvider(name, config)
-    
+
     # Check registry
     info = PROVIDERS.get(name, {})
     provider_class = info.get("class")
-    
+
     if provider_class == "local":
         return LocalProvider(config)
     else:
@@ -470,26 +482,29 @@ def create_provider(name: str, config: dict) -> BaseProvider:
 # Virtual Provider (meta-routers)
 # =============================================================================
 
+
 class VirtualProvider(BaseProvider):
     """Virtual provider that routes to other providers."""
-    
+
     name = "virtual"
-    
+
     ROUTES = {
         "local_only": ["local"],
         "free_providers": ["kilo", "groq", "openrouter"],
         "fast_providers": ["groq", "kilo"],
         "sota_providers": ["openai", "anthropic", "google"],
     }
-    
+
     def __init__(self, name: str, config: dict):
         self.name = name
         self.config = config
         self.route_type = name.replace("picorouter/", "")
-    
-    async def chat(self, messages: list, model: str = None, router=None, **kwargs) -> Dict:
+
+    async def chat(
+        self, messages: list, model: str = None, router=None, **kwargs
+    ) -> Dict:
         """Route to appropriate providers based on type."""
-        
+
         if self.route_type == "privacy":
             return await self._route_local_only(messages, router, **kwargs)
         elif self.route_type == "free":
@@ -498,9 +513,9 @@ class VirtualProvider(BaseProvider):
             return await self._route_fast(messages, router, **kwargs)
         elif self.route_type == "sota":
             return await self._route_sota(messages, router, **kwargs)
-        
+
         raise Exception(f"Unknown virtual route: {self.route_type}")
-    
+
     async def _route_local_only(self, messages, router, **kwargs):
         local = router.profile.get("local", {})
         for model in local.get("models", []):
@@ -510,7 +525,7 @@ class VirtualProvider(BaseProvider):
             except Exception:
                 continue
         raise Exception("No local providers available")
-    
+
     async def _route_free(self, messages, router, **kwargs):
         # Try local first
         local = router.profile.get("local", {})
@@ -520,7 +535,7 @@ class VirtualProvider(BaseProvider):
                     return await router.local_chat(messages, model, **kwargs)
             except Exception:
                 continue
-        
+
         # Try free cloud
         for prov_name in ["kilo", "groq", "openrouter"]:
             prov = router.cloud.get(prov_name)
@@ -531,9 +546,9 @@ class VirtualProvider(BaseProvider):
                     continue
                 except Exception:
                     continue
-        
+
         raise Exception("No free providers available")
-    
+
     async def _route_fast(self, messages, router, **kwargs):
         for prov_name in ["groq", "kilo", "openrouter"]:
             prov = router.cloud.get(prov_name)
@@ -544,7 +559,7 @@ class VirtualProvider(BaseProvider):
                     continue
                 except Exception:
                     continue
-        
+
         # Fallback to local
         local = router.profile.get("local", {})
         for model in local.get("models", []):
@@ -553,9 +568,9 @@ class VirtualProvider(BaseProvider):
                     return await router.local_chat(messages, model, **kwargs)
             except Exception:
                 continue
-        
+
         raise Exception("No fast providers available")
-    
+
     async def _route_sota(self, messages, router, **kwargs):
         for prov_name in ["openai", "anthropic", "google"]:
             prov = router.cloud.get(prov_name)
@@ -566,15 +581,15 @@ class VirtualProvider(BaseProvider):
                     continue
                 except Exception:
                     continue
-        
+
         # Fallback to any
         for prov_name, prov in router.cloud.items():
             try:
                 return await prov.chat(messages, None, **kwargs)
             except Exception:
                 continue
-        
+
         raise Exception("No SOTA providers available")
-    
+
     async def list_models(self) -> List:
         return []
