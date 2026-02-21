@@ -1,190 +1,91 @@
-"""PicoRouter - Core routing logic."""
+"""PicoRouter - Router class."""
 
 import asyncio
-import re
-from dataclasses import dataclass, field
-from typing import Any, Optional
-
-CODE_PATTERNS = [
-    r'def\s+\w+', r'class\s+\w+', r'function\s+\w+',
-    r'const\s+\w+\s*=', r'let\s+\w+\s*=',
-    r'import\s+', r'from\s+\w+\s+import', r'```',
-    r'if\s*\(', r'for\s*\(', r'while\s*\(', r'return\s+',
-]
-
-REASONING_PATTERNS = [
-    r'think\s+step\s*by\s*step', r'explain\s+your\s+reasoning',
-    r'why\s+is\s+', r'how\s+does\s+', r'prove\s+that', r'derive\s+',
-]
-
-LANGUAGE_PATTERNS = {
-    'python': [r'def\s+\w+\s*\(', r'import\s+\w+', r'class\s+\w+:'],
-    'javascript': [r'function\s+\w+', r'const\s+\w+\s*=', r'let\s+\w+\s*='],
-    'rust': [r'fn\s+\w+', r'let\s+mut', r'use\s+\w+::'],
-}
-
-# Header-based routing
-# X-PicoRouter-Profile: override profile
-# X-PicoRouter-Provider: force specific provider
-# X-PicoRouter-Model: force specific model
-# X-PicoRouter-Local: "1" or "true" to force local only
-# X-PicoRouter-Yolo: "1" or "true" to enable YOLO mode
+from picorouter.providers import (
+    LocalProvider,
+    CloudProvider,
+    VirtualProvider,
+    create_provider,
+    RateLimitError,
+)
 
 
-def analyze_headers(headers: dict) -> dict:
-    """Analyze X-PicoRouter-* headers for routing hints."""
-    features = {
-        "header_profile": None,
-        "header_provider": None,
-        "header_model": None,
-        "header_local": False,
-        "header_yolo": False,
-    }
+class Router:
+    """Main router class."""
     
-    if not headers:
-        return features
+    RateLimitError = RateLimitError
     
-    # Normalize headers (lowercase keys)
-    h = {k.lower(): v for k, v in headers.items()}
-    
-    # X-PicoRouter-Profile: use specific profile
-    profile = h.get("x-picorouter-profile")
-    if profile:
-        features["header_profile"] = profile
-    
-    # X-PicoRouter-Provider: force provider
-    provider = h.get("x-picorouter-provider")
-    if provider:
-        features["header_provider"] = provider
-    
-    # X-PicoRouter-Model: force model
-    model = h.get("x-picorouter-model")
-    if model:
-        features["header_model"] = model
-    
-    # X-PicoRouter-Local: force local only
-    local = h.get("x-picorouter-local", "").lower()
-    if local in ["1", "true", "yes"]:
-        features["header_local"] = True
-    
-    # X-PicoRouter-Yolo: enable YOLO mode
-    yolo = h.get("x-picorouter-yolo", "").lower()
-    if yolo in ["1", "true", "yes"]:
-        features["header_yolo"] = True
-    
-    return features
-
-
-def analyze_prompt(prompt: str) -> dict:
-    """Analyze prompt and return detected features."""
-    features = {
-        "contains_code": False,
-        "contains_reasoning": False,
-        "short_prompt": len(prompt) < 200,
-        "long_prompt": len(prompt) > 2000,
-        "language": None,
-    }
-    
-    for pattern in CODE_PATTERNS:
-        if re.search(pattern, prompt, re.IGNORECASE):
-            features["contains_code"] = True
-            break
-    
-    for pattern in REASONING_PATTERNS:
-        if re.search(pattern, prompt, re.IGNORECASE):
-            features["contains_reasoning"] = True
-            break
-    
-    for lang, patterns in LANGUAGE_PATTERNS.items():
-        for pattern in patterns:
-            if re.search(pattern, prompt):
-                features["language"] = lang
-                break
-    
-    return features
-
-
-def match_routing_rule(features: dict, routing: list) -> dict | None:
-    """Match prompt features to routing rules."""
-    for rule in routing:
-        cond = rule.get("condition", rule.get("if", ""))
+    def __init__(self, config: dict, profile_name: str = None):
+        self.config = config
+        self.profile_name = profile_name or config.get("default_profile", "chat")
+        self.profile = config.get("profiles", {}).get(self.profile_name, {})
         
-        if cond == "contains_code" and features.get("contains_code"):
-            return rule
-        elif cond == "contains_reasoning" and features.get("contains_reasoning"):
-            return rule
-        elif cond == "short_prompt" and features.get("short_prompt"):
-            return rule
-        elif cond == "long_prompt" and features.get("long_prompt"):
-            return rule
-        elif cond.startswith("language:") and features.get("language"):
-            lang = cond.split(":")[1]
-            if features.get("language") == lang:
-                return rule
+        # Initialize local provider
+        local_cfg = self.profile.get("local", {})
+        self.local = LocalProvider(local_cfg)
+        
+        # Initialize cloud providers
+        self.cloud = {}
+        cloud_providers = self.profile.get("cloud", {}).get("providers", {})
+        for name, cfg in cloud_providers.items():
+            self.cloud[name] = CloudProvider(name, cfg)
     
-    return None
-
-
-async def route_request(router, messages: list, headers: dict = None, **kwargs):
-    """Route request based on profile, headers, and prompt analysis."""
-    profile = router.profile
+    async def chat(self, messages: list, headers: dict = None, **kwargs) -> dict:
+        """Route and execute chat request."""
+        from picorouter.router import route_request
+        return await route_request(self, messages, headers=headers, **kwargs)
     
-    # Analyze headers for routing hints
-    header_features = analyze_headers(headers or {})
-    
-    # Header can override profile
-    if header_features.get("header_profile"):
-        profile_name = header_features["header_profile"]
-        if profile_name in router.config.get("profiles", {}):
-            profile = router.config["profiles"][profile_name]
-    
-    # Analyze prompt content
-    features = analyze_prompt(messages)
-    matched = match_routing_rule(features, profile.get("routing", []))
-    
-    # YOLO mode - from profile or headers
-    yolo = profile.get("yolo") or header_features.get("header_yolo")
-    if yolo:
-        return await router.yolo_chat(messages, **kwargs)
-    
-    # Force specific provider from header
-    if header_features.get("header_provider"):
-        prov = header_features["header_provider"]
-        model = header_features.get("header_model")
+    async def try_local(self, messages: list, model: str, **kwargs) -> bool:
         try:
-            return await router.cloud_chat(messages, prov, model=model, **kwargs)
+            await self.local.chat(messages, model, **kwargs)
+            return True
         except Exception:
-            pass  # Fall through
+            return False
     
-    # Force local only from header
-    if header_features.get("header_local"):
-        local = profile.get("local", {})
-        for model in local.get("models", []):
+    async def local_chat(self, messages: list, model: str, **kwargs) -> dict:
+        return await self.local.chat(messages, model, **kwargs)
+    
+    async def cloud_chat(self, messages: list, provider: str, **kwargs) -> dict:
+        # Handle virtual providers
+        if provider.startswith("picorouter/"):
+            vp = VirtualProvider(provider, {})
+            return await vp.chat(messages, router=self, **kwargs)
+        
+        prov = self.cloud.get(provider)
+        if not prov:
+            raise Exception(f"Unknown provider: {provider}")
+        
+        model = kwargs.pop("model", None)
+        return await prov.chat(messages, model, **kwargs)
+    
+    async def yolo_chat(self, messages: list, **kwargs) -> dict:
+        """Fire all, return first success."""
+        tasks = []
+        
+        # Local models
+        for model in self.profile.get("local", {}).get("models", []):
+            tasks.append(self._task_wrap(self.local.chat(messages, model, **kwargs), f"local:{model}"))
+        
+        # Cloud providers
+        for name, prov in self.cloud.items():
+            for model in prov.models:
+                tasks.append(self._task_wrap(prov.chat(messages, model, **kwargs), f"{name}:{model}"))
+        
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        
+        for task in pending:
+            task.cancel()
+        
+        for task in done:
             try:
-                if await router.try_local(messages, model, **kwargs):
-                    return await router.local_chat(messages, model, **kwargs)
+                return await task.result()
             except Exception:
                 continue
-        raise Exception("Local providers failed")
+        
+        raise Exception("All providers failed")
     
-    # Try local first (default)
-    local = profile.get("local", {})
-    if not matched or matched.get("use_local"):
-        for model in local.get("models", []):
-            try:
-                if await router.try_local(messages, model, **kwargs):
-                    return await router.local_chat(messages, model, **kwargs)
-            except Exception:
-                continue
-    
-    # Try cloud
-    providers = matched.get("providers", []) if matched else list(profile.get("cloud", {}).keys())
-    for prov in providers:
-        try:
-            return await router.cloud_chat(messages, prov, **kwargs)
-        except router.RateLimitError:
-            continue
-        except Exception:
-            continue
-    
-    raise Exception("All providers failed")
+    @staticmethod
+    async def _task_wrap(coro, name):
+        task = asyncio.create_task(coro)
+        task.set_name(name)
+        return task
