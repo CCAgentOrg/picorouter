@@ -1,155 +1,123 @@
-# PicoRouter CLI
+# CLI Commands
 
-Command-line interface for PicoRouter.
-
-## Installation
-
-```bash
-# Clone and install
-git clone https://github.com/CCAgentOrg/picorouter.git
-cd picorouter
-pip install -r requirements.txt
-
-# Or use the install script
-curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash
-```
-
----
-
-## Commands
-
-### serve
+## serve
 Start the API server.
 
 ```bash
 python picorouter.py serve [options]
+
+Options:
+  -p, --profile NAME    Profile to use (default: chat)
+  -H, --host HOST       Host to bind (default: 0.0.0.0)
+                        Use: localhost, all, tailscale, lan, or IP
+  -P, --port PORT       Port to bind (default: 8080)
+  -r, --rate-limit N    Requests per minute (default: 60, 0 to disable)
+  -i, --show-ips        Show available network IPs
 ```
 
-**Options:**
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-p, --profile` | Profile to use | chat |
-| `--host` | Bind host | 0.0.0.0 |
-| `-P, --port` | Bind port | 8080 |
-| `-r, --rate-limit` | Requests/min (0=off) | 60 |
-
-**Example:**
+Examples:
 ```bash
-# Basic
+# Default
 python picorouter.py serve
 
-# Production
-python picorouter.py serve \
-  --host 127.0.0.1 \
-  --port 8080 \
-  --profile coding \
-  --rate-limit 60
+# Specific profile
+python picorouter.py serve --profile coding
+
+# Tailscale
+python picorouter.py serve --host tailscale
+
+# Show IPs
+python picorouter.py serve --show-ips
 ```
 
----
-
-### chat
-Interactive chat in terminal.
+## chat
+Interactive chat.
 
 ```bash
-python picorouter.py chat -m "Your message"
+python picorouter.py chat -m "message" [options]
+
+Options:
+  -m, --message TEXT   Message to send (required)
+  -p, --profile NAME   Profile to use
 ```
 
-**Options:**
-| Flag | Description |
-|------|-------------|
-| `-m, --message` | Message to send (required) |
-| `-p, --profile` | Profile to use |
-
-**Example:**
-```bash
-python picorouter.py chat -m "Hello, how are you?"
-```
-
----
-
-### config
-Manage configuration.
+## config
+Configuration management.
 
 ```bash
-# Generate example config
-python picorouter.py config --example
+python picorouter.py config [options]
 
-# Interactive config creator
-python picorouter.py config
+Options:
+  -e, --example        Generate example config
+  -o, --output FILE    Output file (default: picorouter.yaml)
 ```
 
----
-
-### logs
+## logs
 View request logs.
 
 ```bash
 python picorouter.py logs [options]
+
+Options:
+  -s, --stats         Show statistics only
+  -n, --limit N       Number of logs to show (default: 20)
 ```
 
-**Options:**
-| Flag | Description |
-|------|-------------|
-| `-s, --stats` | Show statistics |
-| `-n, --limit` | Number of logs (default 20) |
-
-**Example:**
-```bash
-# Show recent logs
-python picorouter.py logs -n 50
-
-# Show stats
-python picorouter.py logs -s
-```
-
----
-
-### key
-Manage API keys.
+## key
+API key management.
 
 ```bash
-# Add new key
-python picorouter.py key add -n mykey --rate-limit 60 --profiles chat,coding
+# Add key
+python picorouter.py key add -n NAME [options]
+
+Options:
+  -n, --name NAME           Key name (required)
+  -r, --rate-limit N        Requests per minute (default: 60)
+  -p, --profiles LIST      Allowed profiles (comma-separated)
+  -r, --readonly           Read-only key
+  -e, --expires DATE       Expiration date (ISO format)
 
 # List keys
 python picorouter.py key list
 
 # Remove key
-python picorouter.py key remove oldkey
+python picorouter.py key remove NAME
 ```
 
-**Options for `key add`:**
-| Flag | Description |
-|------|-------------|
-| `-n, --name` | Key name (required) |
-| `-r, --rate-limit` | Requests/min |
-| `-p, --profiles` | Allowed profiles (comma) |
-| `--readonly` | Chat disabled |
-| `--expires` | Expiration (ISO date) |
-
----
-
-## Environment Variables
+## secrets
+Provider API key management.
 
 ```bash
-# API Keys for providers
-export KILO_API_KEY="sk-..."
-export GROQ_API_KEY="gsk_..."
-export OPENROUTER_API_KEY="sk-or-..."
+# List configured keys
+python picorouter.py secrets list
 
-# PicoRouter own key (optional)
-export PICOROUTER_API_KEY="your-secret-key"
+# Set key
+python picorouter.py secrets set -p PROVIDER -k KEY
+
+Options:
+  -p, --provider NAME   Provider name (openai, anthropic, etc.)
+  -k, --key VALUE      API key value
+
+# Show backends
+python picorouter.py secrets show
 ```
 
----
+## models
+Model discovery from models.dev.
 
-## Quick Reference
+```bash
+# Search models
+python picorouter.py models search [options]
 
-| Task | Command |
-|------|---------|
-| Start server | `python picorouter.py serve` |
-| Chat | `python picorouter.py chat -m "hi"` |
-| View logs | `python picorouter.py logs -s` |
-| Add key | `python picorouter.py key add -n claw` |
-| Generate config | `python picorouter.py config --example` |
+Options:
+  --free              Free models only
+  --context N         Min context length
+  -p, --provider NAME Filter by provider
+  -n, --limit N       Max results (default: 20)
+
+# Sync to config
+python picorouter.py models sync -o OUTPUT
+
+# List providers
+python picorouter.py models providers
+```

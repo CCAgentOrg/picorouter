@@ -1,25 +1,9 @@
-# PicoRouter API
-
-## Base URL
-```
-http://localhost:8080/v1
-```
-
-## Authentication
-
-Pass API key in header:
-```
-Authorization: Bearer your_api_key
-```
-
----
+# API Reference
 
 ## Endpoints
 
-### Chat Completions
-```
-POST /v1/chat/completions
-```
+### POST /v1/chat/completions
+Chat completions (OpenAI-compatible).
 
 **Request:**
 ```json
@@ -36,81 +20,113 @@ POST /v1/chat/completions
 **Response:**
 ```json
 {
-  "id": "chatcmpl-20250221120000",
+  "id": "chatcmpl-20260221010000",
   "object": "chat.completion",
-  "created": 1708500000,
+  "created": 1705800000,
   "model": "llama3",
   "choices": [{
-    "index": 0,
-    "message": {
-      "role": "assistant",
-      "content": "Hello! How can I help?"
-    },
+    "message": {"role": "assistant", "content": "Hello!"},
     "finish_reason": "stop"
   }],
   "usage": {
     "prompt_tokens": 10,
-    "completion_tokens": 20,
-    "total_tokens": 30
+    "completion_tokens": 5,
+    "total_tokens": 15
   }
 }
 ```
 
-### List Models
-```
-GET /v1/models
-```
+### GET /v1/models
+List available models.
 
 **Response:**
 ```json
 {
   "object": "list",
   "data": [
-    {"id": "local:llama3", "object": "model", "created": 0, "owned_by": "local"},
-    {"id": "kilo:minimax/m2.5:free", "object": "model", "created": 0, "owned_by": "kilo"}
+    {"id": "local:llama3", "object": "model", "owned_by": "local"},
+    {"id": "kilo:minimax/m2.5:free", "object": "model", "owned_by": "kilo"}
   ]
 }
 ```
 
-### Health Check
-```
-GET /health
+### GET /health
+Health check.
+
+**Response:**
+```json
+{"status": "ok"}
 ```
 
-**Response:** `{"status": "ok"}`
-
-### Stats
-```
-GET /stats
-```
-Requires authentication.
+### GET /stats
+Usage statistics.
 
 **Response:**
 ```json
 {
-  "total_requests": 100,
-  "total_tokens": 50000,
-  "total_cost_usd": 0.05,
-  "errors": 2
+  "total_requests": 150,
+  "by_provider": {"kilo": 100, "local:ollama": 50},
+  "by_profile": {"coding": 120, "chat": 30},
+  "total_tokens": 450000,
+  "total_cost_usd": 0.12,
+  "errors": 3
 }
 ```
 
-### Logs
-```
-GET /logs?limit=50
-```
-Requires authentication.
+### GET /logs
+Recent request logs.
 
----
+**Query Parameters:**
+- `limit` - Number of logs (default: 50, max: 100)
 
-## Streaming
-
-Set `stream: true` in request:
+**Response:**
 ```json
 {
-  "messages": [{"role": "user", "content": "Tell a story"}],
-  "stream": true
+  "logs": [
+    {
+      "timestamp": "2026-02-21T01:00:00",
+      "profile": "chat",
+      "provider": "kilo",
+      "model": "minimax/m2.5:free",
+      "tokens_used": 100,
+      "status": "success"
+    }
+  ]
 }
 ```
 
-Returns Server-Sent Events (SSE).
+## Authentication
+
+### API Key
+Pass API key in Authorization header:
+
+```bash
+curl -H "Authorization: Bearer pico_xxx" \
+  http://localhost:8080/v1/chat/completions
+```
+
+### Per-Key Limits
+Each key can have:
+- Rate limits (requests/minute)
+- Profile restrictions
+- Capability restrictions (chat/stats/logs)
+
+## Header Routing
+
+Override routing with headers:
+
+```bash
+# Force provider
+curl -H "X-PicoRouter-Provider: openai" \
+  -H "X-PicoRouter-Model: gpt-4o-mini" \
+  ...
+
+# Force profile
+curl -H "X-PicoRouter-Profile: coding" ...
+
+# Force local only
+curl -H "X-PicoRouter-Local: true" ...
+
+# Enable YOLO mode
+curl -H "X-PicoRouter-Yolo: true" ...
+```

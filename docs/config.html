@@ -49,8 +49,6 @@
           models: [gemini-1.5-flash]
         mistral:
           models: [mistral-small-latest]
-        together:
-          models: [meta-llama/Llama-3-70b-chat-hf]
     
     routing:
       - if: short_prompt
@@ -61,11 +59,32 @@
     
     yolo: false
 
+  coding:
+    local:
+      models: [codellama]
+    routing:
+      - if: contains_code
+        use_local: true
+
+  yolo:
+    yolo: true
+
 default_profile: chat
 
 server:
   host: 0.0.0.0
-  port: 8080</code></pre>
+  port: 8080
+
+storage:
+  backend: jsonl
+  log_file: logs/requests.jsonl
+  # SQLite: backend: sqlite
+  # Turso: backend: turso, turso_url: libsql://...
+
+config:
+  backend: file
+  # SQLite: backend: sqlite
+  # Turso: backend: turso</code></pre>
     
     <h2>Environment Variables</h2>
     <pre><code># Providers
@@ -77,13 +96,67 @@ export GOOGLE_API_KEY="AIza..."
 export MISTRAL_API_KEY="..."
 export COHERE_API_KEY="..."
 
-# PicoRouter own key
-export PICOROUTER_API_KEY="your-secret"</code></pre>
+# PicoRouter
+export PICOROUTER_API_KEY="your-secret"
+export PICOROUTER_SECRETS_BACKEND=env
+export PICOROUTER_CONFIG_BACKEND=file</code></pre>
     
-    <h2>CLI Commands</h2>
-    <pre><code>python picorouter.py serve --profile chat
-python picorouter.py chat -m "Hello"
-python picorouter.py logs -s
-python picorouter.py key add -n claw --rate-limit 120</code></pre>
+    <h2>Profiles</h2>
+    <pre><code>profiles:
+  chat:
+    local:
+      provider: ollama
+      models: [llama3]
+    cloud:
+      providers:
+        kilo:
+          models: [minimax/m2.5:free]
+    yolo: false
+
+  coding:
+    local:
+      models: [codellama]
+    routing:
+      - if: contains_code
+        use_local: true
+
+  yolo:
+    yolo: true</code></pre>
+    
+    <h2>Routing Rules</h2>
+    <pre><code>routing:
+  # Use local for short prompts
+  - if: short_prompt
+    use_local: true
+  
+  # Use local for code
+  - if: contains_code
+    use_local: true
+    models: [codellama]
+  
+  # Use specific provider for reasoning
+  - if: contains_reasoning
+    providers: [groq]
+  
+  # Python-specific
+  - if: language:python
+    models: [codellama]</code></pre>
+    
+    <h2>Storage</h2>
+    <pre><code># JSONL (default)
+storage:
+  backend: jsonl
+  log_file: logs/requests.jsonl
+
+# SQLite
+storage:
+  backend: sqlite
+  db_path: logs/picorouter.db
+
+# Turso/LibSQL
+storage:
+  backend: turso
+  turso_url: libsql://my-db.turso.io
+  turso_token: your-auth-token</code></pre>
 </body>
 </html>

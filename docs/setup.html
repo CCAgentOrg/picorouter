@@ -29,48 +29,51 @@
     
     <h1>🚀 Setup</h1>
     
-    <h2>Quick Install</h2>
+    <h2>Install</h2>
+    
+    <h3>curl (recommended)</h3>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>Manual</h2>
+    <h3>Docker</h3>
+    <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>
+    
+    <h3>pip</h3>
+    <pre><code>pip install picorouter</code></pre>
+    
+    <h3>Binary</h3>
+    <pre><code>curl -L -o picorouter https://github.com/CCAgentOrg/picorouter/releases/latest/picorouter-linux-amd64
+chmod +x picorouter
+./picorouter serve</code></pre>
+    
+    <h2>Manual Setup</h2>
     <pre><code>git clone https://github.com/CCAgentOrg/picorouter
 cd picorouter
 pip install -r requirements.txt
 cp config.example.yaml picorouter.yaml
 python picorouter.py serve</code></pre>
     
-    <h2>Docker</h2>
-    <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>
-    
     <h2>API Keys</h2>
-    <p>PicoRouter supports multiple backends for storing provider API keys:</p>
     
-    <h3>1. Environment Variables (Default)</h3>
+    <h3>Environment Variables</h3>
     <pre><code>export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 export GROQ_API_KEY="gsk_..."
 export KILO_API_KEY="..."</code></pre>
     
-    <h3>2. .env File</h3>
-    <pre><code>export PICOROUTER_SECRETS_BACKEND=dotenv
-
-# Create .env file
-echo 'OPENAI_API_KEY="sk-..."' > .env
-echo 'ANTHROPIC_API_KEY="sk-ant-..."' >> .env</code></pre>
+    <h3>CLI</h3>
+    <pre><code>python picorouter.py secrets list
+python picorouter.py secrets set --provider openai --key "sk-..."</code></pre>
     
-    <h3>3. Vaultwarden (Self-hosted Bitwarden)</h3>
-    <pre><code>export PICOROUTER_SECRETS_BACKEND=vaultwarden
-export VAULTWARDEN_TOKEN="your-session-token"
-
-# CLI to manage
-python picorouter.py secrets list</code></pre>
-    
-    <h3>4. Encrypted File</h3>
-    <pre><code>export PICOROUTER_SECRETS_BACKEND=encrypted
-export PICOROUTER_SECRETS_PASSWORD="your-password"</code></pre>
+    <h3>Backends</h3>
+    <ul>
+        <li><strong>env</strong> - Environment variables (default)</li>
+        <li><strong>dotenv</strong> - .env file (set PICOROUTER_SECRETS_BACKEND=dotenv)</li>
+        <li><strong>vaultwarden</strong> - Self-hosted Bitwarden</li>
+        <li><strong>encrypted</strong> - Encrypted local file</li>
+    </ul>
     
     <h2>CLI Commands</h2>
-    <pre><code># Generate example config
+    <pre><code># Generate config
 python picorouter.py config --example
 
 # Start server
@@ -80,11 +83,16 @@ python picorouter.py serve --profile chat
 python picorouter.py serve --host tailscale
 python picorouter.py serve --show-ips
 
-# Manage API keys (for PicoRouter itself)
+# API keys
 python picorouter.py key add -n mykey --rate-limit 60
+python picorouter.py key list
 
-# Manage provider secrets
+# Secrets
 python picorouter.py secrets list
-python picorouter.py secrets set --provider openai --key "sk-..."</code></pre>
+python picorouter.py secrets set --provider openai --key "sk-..."
+
+# Models (from models.dev)
+python picorouter.py models search --free
+python picorouter.py models sync -o config.yaml</code></pre>
 </body>
 </html>
