@@ -99,3 +99,70 @@ class Router:
         task = asyncio.create_task(coro)
         task.set_name(name)
         return task
+
+
+# =============================================================================
+# Prompt Analysis (for tests)
+# =============================================================================
+
+import re
+
+
+def analyze_prompt(prompt: str) -> Dict:
+    """Analyze prompt features."""
+    prompt_lower = prompt.lower()
+    
+    # Length checks
+    short = len(prompt) < 100
+    long = len(prompt) > 1000
+    
+    # Code detection
+    code_patterns = [
+        r'\bdef\s+\w+\s*\(',
+        r'\bclass\s+\w+',
+        r'\bimport\s+\w+',
+        r'\bfrom\s+\w+\s+import',
+        r'\bfunction\s+\w+\s*\(',
+        r'=>\s*\{',
+        r'const\s+\w+\s*=',
+        r'let\s+\w+\s*=',
+        r'var\s+\w+\s*=',
+    ]
+    contains_code = any(re.search(p, prompt) for p in code_patterns)
+    
+    # Reasoning detection
+    reasoning_patterns = ['think step by step', 'explain why', 'reasoning', 'analyze']
+    contains_reasoning = any(p in prompt_lower for p in reasoning_patterns)
+    
+    # Language detection
+    language = None
+    if re.search(r'\bdef\s+\w+\s*\(', prompt):
+        language = 'python'
+    elif re.search(r'\bfunction\s+\w+\s*\(|const\s+\w+\s*=|let\s+\w+\s*=', prompt):
+        language = 'javascript'
+    
+    return {
+        'short_prompt': short,
+        'long_prompt': long,
+        'contains_code': contains_code,
+        'contains_reasoning': contains_reasoning,
+        'language': language,
+    }
+
+
+def match_routing_rule(features: Dict, rules: list) -> Dict | None:
+    """Match features against routing rules."""
+    for rule in rules:
+        condition = rule.get('if', '')
+        
+        # Handle language:xxx syntax
+        if ':' in condition:
+            key, value = condition.split(':', 1)
+            if features.get(key) == value:
+                return rule
+        
+        # Simple key check
+        if features.get(condition):
+            return rule
+    
+    return None

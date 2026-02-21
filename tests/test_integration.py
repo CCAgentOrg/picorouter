@@ -6,9 +6,13 @@ from picorouter.providers import LocalProvider, CloudProvider
 from picorouter.router import Router
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "integration: integration tests")
+
+
 # Only run these if explicitly requested
 pytestmark = pytest.mark.skipif(
-    not pytest.config.getoption("--run-integration", default=False),
+    not hasattr(pytest, 'config') or not pytest.config.getoption("--run-integration", default=False),
     reason="Integration tests require --run-integration flag"
 )
 
