@@ -1,6 +1,6 @@
 [project]
 name = "picorouter"
-version = "0.0.1"
+version = "0.0.2"
 description = "Your personal OpenRouter - lean, local-first AI model router"
 authors = [{name = "CashlessConsumer", email = "hello@cashlessconsumer.org"}]
 requires-python = ">=3.9"

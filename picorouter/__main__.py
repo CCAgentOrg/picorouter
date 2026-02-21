@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PicoRouter v0.0.1 - Minimal AI Model Router.
+"""PicoRouter v0.0.2 - Minimal AI Model Router.
 
 Usage:
     python picorouter.py serve [--profile NAME] [--host HOST] [--port PORT]
