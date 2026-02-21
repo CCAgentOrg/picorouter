@@ -41,7 +41,7 @@ class FileBackend(ConfigBackend):
     def __init__(self, path: str = None):
         self.path = path or self._find_path()
     
-    def _find_path(self) -> str | None:
+    def _find_path(self) -> Optional[str]:
         for p in CONFIG_PATHS:
             if p.exists():
                 return str(p)
@@ -193,7 +193,7 @@ def load_config(path: str = None) -> dict:
     return {}
 
 
-def find_config() -> str | None:
+def find_config() -> Optional[str]:
     """Find config file path (legacy)."""
     for p in CONFIG_PATHS:
         if p.exists():

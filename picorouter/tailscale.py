@@ -6,7 +6,7 @@ import subprocess
 import re
 
 
-def get_tailscale_ip() -> str | None:
+def get_tailscale_ip() -> Optional[str]:
     """Get Tailscale IP address (100.x.x.x)."""
     try:
         # Method 1: Check Tailscale status

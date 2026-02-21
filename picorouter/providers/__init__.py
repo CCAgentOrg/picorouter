@@ -8,6 +8,7 @@ Easy to add new providers:
 import asyncio
 import os
 import httpx
+from typing import Optional
 from picorouter.secrets import SecretsManager, PROVIDER_KEYS
 
 _secrets = SecretsManager()
@@ -108,7 +109,7 @@ PROVIDERS = {
 }
 
 
-def get_provider_info(name: str) -> dict | None:
+def get_provider_info(name: str) -> Optional[dict]:
     """Get provider info by name."""
     return PROVIDERS.get(name.lower())
 
