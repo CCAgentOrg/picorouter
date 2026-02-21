@@ -104,3 +104,8 @@ default_profile: chat
 server:
   host: 0.0.0.0
   port: 8080
+
+# Search configuration (for picorouter-search MCP)
+search:
+  # Your SearXNG instance
+  searxng_url: https://ccsearxng.zeabur.app

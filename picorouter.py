@@ -257,6 +257,93 @@ class RateLimitError(Exception):
     pass
 
 
+class RequestLogger:
+    """Simple request logger for usage tracking."""
+    
+    # Approximate costs per 1M tokens (USD)
+    COST_PER_MILLION = {
+        "local:ollama": 0,  # Free
+        "local:lmstudio": 0,  # Free
+        "kilo": 0,  # Free models
+        "groq": 0.18,  # Groq free tier
+        "openrouter": 0,  # Free models
+        "default": 0.50,  # Fallback estimate
+    }
+    
+    def __init__(self, log_file: str = "logs/requests.jsonl"):
+        self.log_file = Path(log_file)
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # In-memory stats for quick dashboard
+        self.stats = {
+            "total_requests": 0,
+            "by_provider": {},
+            "by_model": {},
+            "by_profile": {},
+            "by_routing": {},  # local vs cloud
+            "total_tokens": 0,
+            "total_cost_usd": 0,
+            "errors": 0,
+        }
+    
+    def log(self, entry: dict):
+        """Log a request entry to file and update stats."""
+        # Write to JSONL
+        with open(self.log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        
+        # Update stats
+        self.stats["total_requests"] += 1
+        
+        provider = entry.get("provider", "unknown")
+        self.stats["by_provider"][provider] = self.stats["by_provider"].get(provider, 0) + 1
+        
+        model = entry.get("model", "unknown")
+        self.stats["by_model"][model] = self.stats["by_model"].get(model, 0) + 1
+        
+        profile = entry.get("profile", "default")
+        self.stats["by_profile"][profile] = self.stats["by_profile"].get(profile, 0) + 1
+        
+        routing = entry.get("routing", "unknown")
+        self.stats["by_routing"][routing] = self.stats["by_routing"].get(routing, 0) + 1
+        
+        tokens = entry.get("tokens_used", 0)
+        self.stats["total_tokens"] += tokens
+        
+        # Calculate cost
+        cost = entry.get("cost_usd", 0)
+        if cost is None:
+            # Estimate cost
+            cost = (tokens / 1_000_000) * self.COST_PER_MILLION.get(provider, 0.50)
+        self.stats["total_cost_usd"] += cost
+        
+        if entry.get("status") == "error":
+            self.stats["errors"] += 1
+    
+    def get_stats(self) -> dict:
+        """Get current stats."""
+        return self.stats
+    
+    def get_recent(self, limit: int = 50) -> list:
+        """Get recent requests."""
+        if not self.log_file.exists():
+            return []
+        
+        entries = []
+        with open(self.log_file) as f:
+            for line in f:
+                try:
+                    entries.append(json.loads(line))
+                except:
+                    continue
+        
+        return entries[-limit:]
+
+
+# Global logger instance
+logger = RequestLogger()
+
+
 class PicoRouter:
     """Main router class."""
     
@@ -499,8 +586,31 @@ class APIHandler(BaseHTTPRequestHandler):
             self._handle_models()
         elif self.path == "/health":
             self.send_json({"status": "ok"})
+        elif self.path == "/stats":
+            self._handle_stats()
+        elif self.path == "/logs":
+            self._handle_logs()
         else:
             self.send_json({"error": "Not found"}, 404)
+    
+    def _handle_stats(self):
+        """Return usage statistics."""
+        stats = logger.get_stats()
+        self.send_json(stats)
+    
+    def _handle_logs(self):
+        """Return recent logs."""
+        limit = 50
+        if "?" in self.path:
+            query = self.path.split("?")[1]
+            if "limit=" in query:
+                try:
+                    limit = int(query.split("limit=")[1].split("&")[0])
+                except:
+                    pass
+        
+        logs = logger.get_recent(limit)
+        self.send_json({"logs": logs})
     
     def do_POST(self):
         """Handle POST requests."""
@@ -547,6 +657,9 @@ class APIHandler(BaseHTTPRequestHandler):
     
     def _handle_chat_completions(self, data: dict):
         """Handle chat completions request."""
+        import time
+        start_time = time.time()
+        
         messages = data.get("messages", [])
         model = data.get("model", "")
         
@@ -556,6 +669,11 @@ class APIHandler(BaseHTTPRequestHandler):
             if key in data:
                 kwargs[key] = data[key]
         
+        # Track which provider served this request
+        used_provider = "unknown"
+        used_model = model or "auto"
+        used_routing = "seamless"  # seamless or yolo
+        
         # Run async
         try:
             loop = asyncio.new_event_loop()
@@ -564,6 +682,32 @@ class APIHandler(BaseHTTPRequestHandler):
                 self.router.chat(messages, **kwargs)
             )
             loop.close()
+            
+            # Determine which provider was used
+            # (Could be enhanced to track this from router)
+            
+            # Count tokens if available
+            tokens_used = 0
+            if "usage" in result:
+                tokens_used = result["usage"].get("total_tokens", 0)
+            
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Log the request with full metadata
+            logger.log({
+                "timestamp": datetime.now().isoformat(),
+                "request_id": f"req_{datetime.now().strftime('%Y%m%d%H%M%S%f')}",
+                "profile": self.router.profile_name,
+                "provider": used_provider,
+                "model": used_model,
+                "routing": used_routing,
+                "input_tokens": result.get("usage", {}).get("prompt_tokens", 0),
+                "output_tokens": result.get("usage", {}).get("completion_tokens", 0),
+                "tokens_used": tokens_used,
+                "duration_ms": duration_ms,
+                "cost_usd": None,  # Auto-calculated from token count
+                "status": "success",
+            })
             
             # Convert to OpenAI format
             response = {
@@ -579,10 +723,29 @@ class APIHandler(BaseHTTPRequestHandler):
                     },
                     "finish_reason": "stop",
                 }],
+                "usage": result.get("usage", {}),
             }
             
             self.send_json(response)
         except Exception as e:
+            duration_ms = int((time.time() - start_time) * 1000)
+            
+            # Log error
+            logger.log({
+                "timestamp": datetime.now().isoformat(),
+                "request_id": f"req_{datetime.now().strftime('%Y%m%d%H%M%S%f')}",
+                "profile": self.router.profile_name,
+                "provider": used_provider,
+                "model": used_model,
+                "routing": used_routing,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "tokens_used": 0,
+                "duration_ms": duration_ms,
+                "cost_usd": 0,
+                "status": "error",
+                "error": str(e)[:200],
+            })
             self.send_json({"error": str(e)}, 500)
     
     def _handle_completions(self, data: dict):
@@ -814,6 +977,11 @@ def main():
     chat_parser = subparsers.add_parser("chat", help="Chat interactively")
     chat_parser.add_argument("--message", "-m", required=True, help="Message to send")
     
+    # Logs command
+    logs_parser = subparsers.add_parser("logs", help="View usage logs")
+    logs_parser.add_argument("--limit", "-n", type=int, default=20, help="Number of entries to show")
+    logs_parser.add_argument("--stats", "-s", action="store_true", help="Show only stats")
+    
     args = parser.parse_args()
     
     if args.command == "config":
@@ -864,6 +1032,40 @@ def main():
             print(f"\n🤖 {content}")
         finally:
             loop.close()
+    
+    elif args.command == "logs":
+        # Just use the logger directly
+        if args.stats:
+            stats = logger.get_stats()
+            print("\n📊 PicoRouter Usage Stats")
+            print("=" * 40)
+            print(f"Total Requests:  {stats['total_requests']}")
+            print(f"Total Tokens:   {stats['total_tokens']:,}")
+            print(f"Total Cost:     ${stats['total_cost_usd']:.4f}")
+            print(f"Errors:         {stats['errors']}")
+            print("\nBy Routing:")
+            for routing, count in sorted(stats['by_routing'].items(), key=lambda x: -x[1]):
+                print(f"  {routing}: {count}")
+            print("\nBy Provider:")
+            for provider, count in sorted(stats['by_provider'].items(), key=lambda x: -x[1]):
+                print(f"  {provider}: {count}")
+            print("\nBy Profile:")
+            for profile, count in sorted(stats['by_profile'].items(), key=lambda x: -x[1]):
+                print(f"  {profile}: {count}")
+        else:
+            logs = logger.get_recent(args.limit)
+            print(f"\n📜 Recent {len(logs)} requests:")
+            print("=" * 100)
+            for log in logs:
+                ts = log.get("timestamp", "")[:19]
+                status = "✓" if log.get("status") == "success" else "✗"
+                routing = log.get("routing", "?")[:8]
+                provider = log.get("provider", "?")[:12]
+                tokens = log.get("tokens_used", 0)
+                duration = log.get("duration_ms", 0)
+                print(f"{status} {ts} | {routing:8} | {provider:12} | {tokens:6} tokens | {duration:5}ms")
+        
+        print()
     
     else:
         parser.print_help()

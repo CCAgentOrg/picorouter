@@ -11,6 +11,7 @@
 - **Intelligent routing**: Content-aware model selection based on prompt analysis
 - **OpenAI-compatible**: Works with any LLM app (Claude Code, Cursor, Continue, etc.)
 - **Lean**: <50MB memory, minimal dependencies
+- **Built-in search**: MCP server for your SearXNG instance
 
 ## Quick Start
 
@@ -109,7 +110,74 @@ POST /v1/chat/completions
 POST /v1/completions
 GET  /v1/models
 GET  /health
+
+# Usage tracking
+GET  /stats          # Usage statistics
+GET  /logs           # Recent requests (JSONL)
 ```
+
+## Usage Dashboard
+
+```bash
+# View stats
+curl http://localhost:8080/stats
+
+# View recent logs
+curl http://localhost:8080/logs
+curl http://localhost:8080/logs?limit=100
+
+# CLI view
+python picorouter.py logs -s
+python picorouter.py logs -n 20
+```
+
+Stats include:
+- Total requests
+- Total tokens
+- Total cost (USD, estimated)
+- Requests by routing (seamless/yolo)
+- Requests by provider
+- Requests by model
+- Requests by profile
+- Error count
+
+Each log entry includes:
+- timestamp, request_id, profile, provider, model
+- routing mode, tokens (in/out/total), duration_ms, cost_usd
+
+## PicoSearch MCP Server
+
+Built-in search via MCP (Model Context Protocol):
+
+```bash
+# Run the MCP search server
+python mcpsearch.py
+```
+
+### Tools exposed:
+- `search` - Search the web via SearXNG
+- `search_stats` - View search usage stats
+
+### Config (picorouter.yaml):
+```yaml
+search:
+  searxng_url: https://ccsearxng.zeabur.app
+```
+
+### Usage in Claude Code / Continue:
+Add to your MCP config:
+```json
+{
+  "mcpServers": {
+    "picorouter-search": {
+      "command": "python",
+      "args": ["/path/to/picorouter/mcpsearch.py"]
+    }
+  }
+}
+```
+
+Then use: `Search the web for...` in your AI assistant.
 
 ## Use Cases
 
