@@ -2,6 +2,35 @@
 
 All notable changes to PicoRouter will be documented in this file.
 
+## [0.0.3] - 2026-02-21
+
+### Fixed
+- **Critical syntax error** in storage.py (TursoBackend initialization)
+- **Duplicate code** in __main__.py (models parser defined twice)
+- **Empty exception blocks** - Added proper exception handling with logging in:
+  - config.py (SQLite config JSON parsing)
+  - storage.py (JSONL log file parsing)
+  - api.py (query parameter parsing)
+- **Missing VaultwardenBackend.delete()** - Implemented secret deletion via bw CLI
+- **Rate limiter thread-safety** - Added threading.Lock to prevent race conditions in multi-threaded API server
+- **Missing imports** - Restored BaseHTTPRequestHandler, Router, and KeyManager imports in api.py
+- **Fragile models.dev parsing** - Improved with multiple strategies, better error handling, and regex fallback
+
+### Security
+- **API input validation** - Added comprehensive validation for /v1/chat/completions:
+  - Message structure validation (role, content fields)
+  - Role validation (system, user, assistant only)
+  - Content length limits (100k characters per message)
+  - Numeric parameter validation (temperature: 0-2.0, top_p: 0-1.0, max_tokens: 1-32000)
+  - Model parameter sanitization
+  - Type checking for all inputs
+
+### Improved
+- Better error logging for debugging
+- Thread-safe rate limiting for production use
+- Complete Vaultwarden secrets backend implementation
+- Robust models.dev data parsing with fallback strategies
+
 ## [0.0.1] - 2026-02-21
 
 ### Added
