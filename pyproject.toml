@@ -1,8 +1,8 @@
 [project]
 name = "picorouter"
-version = "0.1.0"
+version = "0.0.1"
 description = "Your personal OpenRouter - lean, local-first AI model router"
-authors = [{name = "CashlessConsumer"}]
+authors = [{name = "CashlessConsumer", email = "hello@cashlessconsumer.org"}]
 requires-python = ">=3.9"
 dependencies = [
     "pyyaml>=6.0",
@@ -16,7 +16,11 @@ dev = [
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21.0",
 ]
+test = ["pytest", "pytest-cov", "pytest-asyncio"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+picorouter = "picorouter.__main__:main"
