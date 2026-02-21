@@ -13,7 +13,7 @@ import subprocess
 import base64
 import hashlib
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict
 
 # Provider API key env var mapping
 PROVIDER_KEYS = {
@@ -48,7 +48,7 @@ class SecretsBackend:
     def delete(self, key: str) -> None:
         raise NotImplementedError
     
-    def list_keys(self) -> list[str]:
+    def list_keys(self) -> List[str]:
         raise NotImplementedError
 
 
@@ -64,7 +64,7 @@ class EnvBackend(SecretsBackend):
     def delete(self, key: str) -> None:
         os.environ.pop(key, None)
     
-    def list_keys(self) -> list[str]:
+    def list_keys(self) -> List[str]:
         return [k for k in os.environ if k.endswith("_API_KEY")]
 
 
@@ -102,7 +102,7 @@ class DotEnvBackend(SecretsBackend):
         self.data.pop(key, None)
         self._save()
     
-    def list_keys(self) -> list[str]:
+    def list_keys(self) -> List[str]:
         return list(self.data.keys())
 
 
@@ -158,7 +158,7 @@ class VaultwardenBackend(SecretsBackend):
     def delete(self, key: str) -> None:
         pass  # Not implemented
     
-    def list_keys(self) -> list[str]:
+    def list_keys(self) -> List[str]:
         try:
             items = self._run(["list", "items"])
             return [i.get("name") for i in items if i.get("name")]
@@ -229,7 +229,7 @@ class EncryptedFileBackend(SecretsBackend):
         self.data.pop(key, None)
         self._save()
     
-    def list_keys(self) -> list[str]:
+    def list_keys(self) -> List[str]:
         return list(self.data.keys())
 
 
@@ -279,7 +279,7 @@ class SecretsManager:
     def set(self, key: str, value: str) -> None:
         self.backend.set(key, value)
     
-    def list_providers(self) -> list[dict]:
+    def list_providers(self) -> List[dict]:
         """List all providers and their key status."""
         results = []
         for provider, env_var in PROVIDER_KEYS.items():
