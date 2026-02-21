@@ -1,4 +1,10 @@
-# PicoRouter v0.0.1
+# PicoRouter v0.0.2
+
+[![Release](https://img.shields.io/github/v/release/CCAgentOrg/picorouter)](https://github.com/CCAgentOrg/picorouter/releases)
+[![Docker](https://img.shields.io/docker/pulls/ccagentorg/picorouter)](https://hub.docker.com/r/ccagentorg/picorouter)
+[![PyPI](https://img.shields.io/pypi/v/picorouter)](https://pypi.org/project/picorouter/)
+[![License](https://img.shields.io/github/license/CCAgentOrg/picorouter)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/CCAgentOrg/picorouter/ci)](https://github.com/CCAgentOrg/picorouter/actions)
 
 **Your personal OpenRouter** — lean, local-first, AI model router.
 
