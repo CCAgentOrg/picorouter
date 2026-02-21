@@ -18,8 +18,6 @@
         nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         nav a { margin-right: 1rem; }
         footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #eee; color: #666; }
-        .docs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        .doc-card { background: #f0f7ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #0066cc; }
     </style>
 </head>
 <body>
@@ -37,37 +35,23 @@
     <h2>Quick Start</h2>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>All the Interfaces</h2>
-    <div class="docs-grid">
-        <div class="doc-card">
+    <h2>Interfaces</h2>
+    <div class="feature-grid">
+        <div class="feature">
             <h3>📡 API</h3>
-            <p>RESTful OpenAI-compatible API</p>
-            <a href="api.html">Docs →</a>
+            <p>REST API at /v1/chat/completions</p>
         </div>
-        <div class="doc-card">
+        <div class="feature">
             <h3>🐍 SDK</h3>
             <p>Python client library</p>
-            <a href="sdk.html">Docs →</a>
         </div>
-        <div class="doc-card">
+        <div class="feature">
             <h3>⌨️ CLI</h3>
-            <p>Command-line tools</p>
-            <a href="cli.html">Docs →</a>
+            <p>serve, chat, logs, key commands</p>
         </div>
-        <div class="doc-card">
-            <h3>🖥️ TUI</h3>
-            <p>Terminal user interface</p>
-            <a href="tui.html">Docs →</a>
-        </div>
-        <div class="doc-card">
-            <h3>🌐 Web</h3>
-            <p>Browser-based chat UI</p>
-            <a href="web.html">Docs →</a>
-        </div>
-        <div class="doc-card">
-            <h3>🐳 Docker</h3>
-            <p>Containerized deployment</p>
-            <a href="docker.html">Docs →</a>
+        <div class="feature">
+            <h3>🌐 Web UI</h3>
+            <p>Separate PWA — <a href="https://github.com/CCAgentOrg/picorouter-web">picorouter-web</a></p>
         </div>
     </div>
     

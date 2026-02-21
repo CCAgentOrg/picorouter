@@ -21,6 +21,17 @@ Bring all your models together — configure routing profiles, and PicoRouter au
 
 ---
 
+## Interfaces
+
+| Interface | Description |
+|-----------|-------------|
+| **API** | REST API at `/v1/chat/completions` |
+| **CLI** | `python picorouter.py serve\|chat\|logs` |
+| **SDK** | Python client in `sdk/` |
+| **Web UI** | Separate PWA at [picorouter-web](https://github.com/CCAgentOrg/picorouter-web) |
+
+---
+
 ## Quick Start
 
 ```bash
