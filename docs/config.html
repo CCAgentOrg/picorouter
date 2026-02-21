@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config - PicoRouter</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
+        h1, h2, h3 { color: #1a1a1a; margin: 1.5rem 0 1rem; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        a { color: #0066cc; }
+        nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        nav a { margin-right: 1rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="features.html">Features</a>
+        <a href="config.html">Config</a>
+        <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a>
+    </nav>
+    
+    <h1>⚙️ Configuration</h1>
+    
+    <h2>Config File</h2>
+    <p>Location: <code>picorouter.yaml</code></p>
+    
+    <h2>Profile Example</h2>
+    <pre><code>profiles:
+  chat:
+    local:
+      provider: ollama
+      endpoint: http://localhost:11434
+      models: [llama3]
+    
+    cloud:
+      providers:
+        kilo:
+          models: [minimax/m2.5:free]
+        openrouter:
+          models: [openrouter/free]
+    
+    routing:
+      - if: short_prompt
+        use_local: true
+      - if: contains_code
+        use_local: true
+        models: [codellama]
+    
+    yolo: false</code></pre>
+    
+    <h2>Environment Variables</h2>
+    <pre><code>export KILO_API_KEY="sk-..."
+export GROQ_API_KEY="gsk_..."
+export OPENROUTER_API_KEY="sk-or-..."</code></pre>
+    
+    <h2>Database (Optional)</h2>
+    <pre><code>database:
+  turso_url: "libsql://your-db.turso.io"</code></pre>
+    
+    <h2>CLI Commands</h2>
+    <pre><code>python picorouter.py serve --profile coding
+python picorouter.py chat -m "Hello"
+python picorouter.py logs -s
+python picorouter.py config --example</code></pre>
+</body>
+</html>

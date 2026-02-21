@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - PicoRouter</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
+        h1, h2, h3 { color: #1a1a1a; margin: 1.5rem 0 1rem; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+        pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+        pre code { background: none; padding: 0; }
+        a { color: #0066cc; }
+        nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        nav a { margin-right: 1rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="features.html">Features</a>
+        <a href="config.html">Config</a>
+        <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a>
+    </nav>
+    
+    <h1>🚀 Setup</h1>
+    
+    <h2>One-Command Install</h2>
+    <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
+    
+    <h2>Step-by-Step</h2>
+    
+    <h3>1. Clone</h3>
+    <pre><code>git clone https://github.com/CCAgentOrg/picorouter.git
+cd picorouter</code></pre>
+    
+    <h3>2. Install</h3>
+    <pre><code>pip install -r requirements.txt</code></pre>
+    <p>Or with uv:</p>
+    <pre><code>uv pip install -r requirements.txt</code></pre>
+    
+    <h3>3. Configure</h3>
+    <pre><code>python picorouter.py config --example
+# Edit picorouter.yaml with your API keys</code></pre>
+    
+    <h3>4. Run</h3>
+    <pre><code>python picorouter.py serve</code></pre>
+    
+    <h2>Connect Apps</h2>
+    <table>
+        <tr><td>OpenClaw</td><td><code>baseUrl: http://localhost:8080/v1</code></td></tr>
+        <tr><td>VSCode</td><td><code>openai.apiBaseUrl: http://localhost:8080/v1</code></td></tr>
+        <tr><td>Claude Code</td><td><code>OPENAI_API_BASE=http://localhost:8080/v1</code></td></tr>
+    </table>
+</body>
+</html>
