@@ -73,6 +73,35 @@
 
 ---
 
+## Security Comparison
+
+| Security Aspect | OpenRouter (Cloud) | PicoRouter (Local) |
+|-----------------|-------------------|-------------------|
+| **Your API keys** | Exposed to OpenRouter | Never leave your machine |
+| **Traffic** | Goes through 3rd party | Local only |
+| **Logs** | OpenRouter sees everything | You control logging |
+| **Data retention** | OpenRouter policy | Your policy |
+| **ZDR/Privacy** | Partial (opt-in flag) | Full control |
+| **Network exposure** | Internet-facing | Local/Tailscale only |
+| **Attack surface** | OpenRouter + providers | Your server only |
+
+### Why PicoRouter is More Secure
+
+1. **Keys stay local** — Your provider API keys never leave your machine
+2. **No intermediary** — Traffic goes directly from you → provider (encrypted HTTPS)
+3. **You control data** — No logs on third-party servers
+4. **Air-gap capable** — Can run offline after initial setup
+5. **Audit locally** — Inspect all traffic yourself
+
+### When to Use OpenRouter
+
+- Convenience over privacy
+- Need 100+ models
+- Unified billing
+- Enterprise compliance (they handle SOC2, etc.)
+
+---
+
 ## Feature Deep Dive
 
 ### OpenRouter.ai
