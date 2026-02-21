@@ -1,110 +1,119 @@
-# PicoRouter vs OpenRouter — Feature Comparison
+# PicoRouter — Feature Comparison
 
-| Feature | OpenRouter.ai | PicoRouter | Notes |
-|---------|---------------|------------|-------|
-| **Core** | | | |
-| Local models | ❌ | ✅ | Ollama, LM Studio |
-| Cloud providers | 100+ | 3 (Kilo, Groq, OpenRouter) | Extensible |
-| Local-first routing | ❌ | ✅ | Free, unlimited, private |
-| **Routing** | | | |
-| Automatic failover | ✅ | ✅ | On 429/error |
-| Content-aware routing | ❌ | ✅ | Code/reasoning detection |
-| Profiles | ❌ | ✅ | chat, coding, yolo, custom |
-| YOLO mode (fire all) | ❌ | ✅ | Max speed, all providers |
-| **API** | | | |
-| OpenAI-compatible | ✅ | ✅ | `/v1/chat/completions` |
-| Streaming | ✅ | ⚠️ | Basic |
-| Custom endpoints | ❌ | ⚠️ | Via config |
-| **Authentication** | | | |
-| API keys | ✅ | ✅ | Multiple keys |
-| Per-key limits | ❌ | ✅ | Rate limits per key |
-| Per-key profiles | ❌ | ✅ | Profile restrictions |
-| Per-key capabilities | ❌ | ✅ | chat/stats/logs control |
-| Key expiration | ❌ | ✅ | Auto-expiry |
-| **Analytics** | | | |
-| Usage tracking | ✅ | ✅ | Tokens, cost |
-| Request logs | ✅ | ✅ | JSONL |
-| Cost by model | ✅ | ⚠️ | Basic |
-| **Deployment** | | | |
-| Self-hosted | ❌ | ✅ | Run anywhere |
-| Docker | ❌ | ✅ | Alpine image |
-| OpenWrt/embedded | ❌ | ✅ | Python 3.9+, minimal deps |
-| **Interface** | | | |
-| Web UI | ✅ | ⚠️ | Separate PWA repo |
-| CLI | ❌ | ✅ | serve, chat, logs |
-| SDK | ✅ | ⚠️ | Simple Python |
-| **Pricing** | | | |
-| Service cost | 5% markup | $0 | Self-hosted |
-| Free models | ✅ | ✅ | Kilo, Groq, Ollama |
+## LLM Router Landscape
+
+| Router | Type | Local | Self-Hosted | Content Routing | Multi-Key | Target |
+|--------|------|-------|-------------|-----------------|-----------|--------|
+| **OpenRouter.ai** | Cloud | ❌ | ❌ | ❌ | ❌ | General |
+| **Portkey.ai** | Cloud | ❌ | ❌ | ✅ | ✅ | Enterprise |
+| **LiteLLM** | Open Source | ✅ | ✅ | ❌ | ❌ | Devs |
+| **Higress** | Open Source | ✅ | ✅ | ❌ | ❌ | Cloud Native |
+| **APIAgent** | Open Source | ✅ | ✅ | ✅ | ✅ | Developers |
+| **PicoRouter** | Open Source | ✅ | ✅ | ✅ | ✅ | Embedded/Personal |
 
 ---
 
-## Summary
+## PicoRouter vs Competitors
 
-| Use Case | Recommendation |
-|----------|---------------|
-| Want all 100+ models | OpenRouter.ai |
-| Want local + privacy | PicoRouter |
-| Want free + self-hosted | PicoRouter |
-| Want embedded/IoT | PicoRouter |
-| Want content-aware routing | PicoRouter |
-| Want per-key controls | PicoRouter |
-
----
-
-## Feature Details
-
-### OpenRouter.ai Strengths
-
-- **Massive model selection** — 100+ models from Anthropic, OpenAI, Meta, etc.
-- **Unified billing** — One bill for all providers
-- **Built-in credits** — No need to manage multiple accounts
-- **Production-ready** — High availability, SLAs
-
-### PicoRouter Strengths
-
-- **Local-first** — Free, unlimited, private with Ollama
-- **Self-hosted** — No cloud dependency
-- **Embedded** — Runs on Raspberry Pi, OpenWrt, etc.
-- **Content-aware** — Auto-detects code, reasoning, prompt length
-- **Multi-key** — Granular API key management
-- **No markup** — 100% of API costs go to providers
+| Feature | OpenRouter | Portkey | LiteLLM | PicoRouter |
+|---------|-----------|---------|---------|------------|
+| **Core** | | | | |
+| Local models (Ollama) | ❌ | ❌ | ✅ | ✅ |
+| Cloud providers | 100+ | 100+ | 100+ | 15+ |
+| Local-first routing | ❌ | ❌ | ⚠️ | ✅ |
+| **Routing** | | | | |
+| Automatic failover | ✅ | ✅ | ✅ | ✅ |
+| Content-aware | ❌ | ✅ | ❌ | ✅ |
+| Profiles | ❌ | ❌ | ❌ | ✅ |
+| YOLO mode | ❌ | ❌ | ❌ | ✅ |
+| **Auth** | | | | |
+| Multi-key | ❌ | ✅ | ❌ | ✅ |
+| Per-key limits | ❌ | ✅ | ❌ | ✅ |
+| Per-key profiles | ❌ | ✅ | ❌ | ✅ |
+| **Deploy** | | | | |
+| Self-hosted | ❌ | ❌ | ✅ | ✅ |
+| Docker | ❌ | ❌ | ✅ | ✅ |
+| OpenWrt/embedded | ❌ | ❌ | ❌ | ✅ |
+| Minimal deps | ❌ | ❌ | ⚠️ | ✅ |
+| **Cost** | | | | |
+| Service markup | 5% | 10% | $0 | $0 |
 
 ---
 
-## Migration from OpenRouter
+## Feature Deep Dive
 
-If switching from OpenRouter to PicoRouter:
+### OpenRouter.ai
+- **Type:** Cloud service
+- **Pros:** 100+ models, unified billing
+- **Cons:** No local, 5% markup, no self-hosting
 
+### Portkey.ai  
+- **Type:** Cloud service
+- **Pros:** Observability, AI gateway, 100+ providers
+- **Cons:** 10% markup, no local models, enterprise-focused
+
+### LiteLLM
+- **Type:** Open source
+- **Pros:** 100+ providers, Kubernetes ingress, OpenAI-compatible
+- **Cons:** Heavy (FastAPI), no content-aware routing, basic auth
+
+### PicoRouter
+- **Type:** Open source (personal/embedded)
+- **Pros:** 
+  - Local-first (Ollama, LM Studio)
+  - Minimal (Python 3.9+, no FastAPI)
+  - Content-aware routing (code/reasoning/length)
+  - YOLO mode (fire all, take first)
+  - Multi-key with profiles
+  - Runs on Raspberry Pi, OpenWrt
+- **Cons:** Fewer cloud providers (15 vs 100+), no built-in observability
+
+---
+
+## When to Use What
+
+| Use Case | Choice |
+|----------|--------|
+| Access 100+ cloud models | OpenRouter |
+| Enterprise gateway + observability | Portkey |
+| Kubernetes AI gateway | LiteLLM |
+| **Local-first + privacy** | **PicoRouter** |
+| **Embedded/IoT/edge** | **PicoRouter** |
+| **Content-aware routing** | **PicoRouter** |
+| **Free self-hosted** | **PicoRouter** |
+| **Simple personal router** | **PicoRouter** |
+
+---
+
+## Migration
+
+### From OpenRouter
 ```python
-# Before (OpenRouter)
-client = OpenAI(
-    base_url="https://openrouter.ai/v1",
-    api_key="sk-or-..."
-)
+# OpenRouter
+client = OpenAI(base_url="https://openrouter.ai/v1", api_key="sk-or-...")
 
-# After (PicoRouter)
-client = OpenAI(
-    base_url="http://localhost:8080/v1",
-    api_key="pico_xxx"  # Optional
-)
+# PicoRouter
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="pico_xxx")
 ```
 
-### Equivalent Models
+### From LiteLLM
+```python
+# LiteLLM
+litellm.router = litellm.Router(model_list=[...])
 
-| OpenRouter | PicoRouter |
-|------------|------------|
-| openai/gpt-3.5-turbo | Use cloud provider |
-| anthropic/claude-3-haiku | Use cloud provider |
-| meta-llama/llama-3-70b | local:llama3 |
-| mistralai/mixtral-8x7b | local:mistral |
+# PicoRouter
+# config.yaml handles everything
+```
 
 ---
 
-## Conclusion
+## PicoRouter Philosophy
 
-**OpenRouter.ai** = Best for accessing many cloud models with unified billing.
+**"Pico" = Tiny, focused, efficient**
 
-**PicoRouter** = Best for local-first, privacy, self-hosting, embedded, or cost-sensitive use cases.
-
-PicoRouter can complement OpenRouter — use local for simple tasks, fall back to OpenRouter for specialized models.
+- **<50MB memory** — Runs on edge devices
+- **Python 3.9+** — No 3.11 requirement
+- **Plain http.server** — No FastAPI bloat
+- **Local-first** — Free, unlimited, private
+- **Content-aware** — Routes based on prompt analysis
+- **YOLO mode** — Fire all, fastest wins
