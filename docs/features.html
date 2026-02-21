@@ -12,11 +12,11 @@
         pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
         pre code { background: none; padding: 0; }
         a { color: #0066cc; }
-        nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
-        nav a { margin-right: 1rem; }
         table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
         th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: left; }
         th { background: #f4f4f4; }
+        nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+        nav a { margin-right: 1rem; }
     </style>
 </head>
 <body>
@@ -30,33 +30,34 @@
     
     <h1>✨ Features</h1>
     
-    <h2>Core Features</h2>
-    <ul>
-        <li><strong>Local-First</strong> — Ollama, LM Studio always tried first</li>
-        <li><strong>Cloud Fallback</strong> — Kilo, Groq, OpenRouter on failure</li>
-        <li><strong>Intelligent Routing</strong> — Detects code, reasoning, prompt length</li>
-        <li><strong>Profiles</strong> — chat, coding, yolo, claw</li>
-        <li><strong>Usage Tracking</strong> — Tokens, cost, duration</li>
-    </ul>
+    <h2>Supported Providers</h2>
+    <table>
+        <tr><th>Provider</th><th>Type</th><th>Notes</th></tr>
+        <tr><td>Ollama</td><td>Local</td><td>Free, unlimited, private</td></tr>
+        <tr><td>LM Studio</td><td>Local</td><td>Free, unlimited, private</td></tr>
+        <tr><td>Kilo.ai</td><td>Cloud</td><td>Free models</td></tr>
+        <tr><td>Groq</td><td>Cloud</td><td>Fast inference</td></tr>
+        <tr><td>OpenRouter</td><td>Aggregator</td><td>100+ models</td></tr>
+        <tr><td>OpenAI</td><td>Cloud</td><td>GPT-4, GPT-4o</td></tr>
+        <tr><td>Anthropic</td><td>Cloud</td><td>Claude 3</td></tr>
+        <tr><td>Google</td><td>Cloud</td><td>Gemini</td></tr>
+        <tr><td>Mistral</td><td>Cloud</td><td>Mistral AI</td></tr>
+        <tr><td>Cohere</td><td>Cloud</td><td>Command R</td></tr>
+        <tr><td>Together</td><td>Aggregator</td><td>Open models</td></tr>
+        <tr><td>DeepInfra</td><td>Aggregator</td><td>Llama, etc.</td></tr>
+        <tr><td>Fireworks</td><td>Aggregator</td><td>Llama, etc.</td></tr>
+        <tr><td>Replicate</td><td>Cloud</td><td>Custom models</td></tr>
+        <tr><td>Azure</td><td>Cloud</td><td>Enterprise</td></tr>
+    </table>
     
-    <h2>Routing Rules</h2>
+    <h2>Routing</h2>
     <table>
         <tr><th>Condition</th><th>Description</th></tr>
         <tr><td>contains_code</td><td>Functions, classes, imports</td></tr>
-        <tr><td>contains_reasoning</td><td>"think step by step", "explain why"</td></tr>
-        <tr><td>short_prompt</td><td>Under 200 characters</td></tr>
-        <tr><td>long_prompt</td><td>Over 2000 characters</td></tr>
-        <tr><td>language:python</td><td>Python-specific code</td></tr>
-    </table>
-    
-    <h2>Providers</h2>
-    <table>
-        <tr><th>Provider</th><th>Type</th><th>Free</th></tr>
-        <tr><td>Ollama</td><td>Local</td><td>✓ Unlimited</td></tr>
-        <tr><td>LM Studio</td><td>Local</td><td>✓ Unlimited</td></tr>
-        <tr><td>Kilo.ai</td><td>Cloud</td><td>✓ Yes</td></tr>
-        <tr><td>Groq</td><td>Cloud</td><td>✓ Yes</td></tr>
-        <tr><td>OpenRouter</td><td>Cloud</td><td>✓ Yes</td></tr>
+        <tr><td>contains_reasoning</td><td>"think step by step"</td></tr>
+        <tr><td>short_prompt</td><td>Under 200 chars</td></tr>
+        <tr><td>long_prompt</td><td>Over 2000 chars</td></tr>
+        <tr><td>language:python</td><td>Python-specific</td></tr>
     </table>
     
     <h2>API Endpoints</h2>

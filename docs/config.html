@@ -27,10 +27,7 @@
     
     <h1>⚙️ Configuration</h1>
     
-    <h2>Config File</h2>
-    <p>Location: <code>picorouter.yaml</code></p>
-    
-    <h2>Profile Example</h2>
+    <h2>Full Example</h2>
     <pre><code>profiles:
   chat:
     local:
@@ -42,8 +39,18 @@
       providers:
         kilo:
           models: [minimax/m2.5:free]
-        openrouter:
-          models: [openrouter/free]
+        groq:
+          models: [llama-3.1-70b-versatile]
+        openai:
+          models: [gpt-4o-mini]
+        anthropic:
+          models: [claude-3-haiku-20240307]
+        google:
+          models: [gemini-1.5-flash]
+        mistral:
+          models: [mistral-small-latest]
+        together:
+          models: [meta-llama/Llama-3-70b-chat-hf]
     
     routing:
       - if: short_prompt
@@ -52,21 +59,31 @@
         use_local: true
         models: [codellama]
     
-    yolo: false</code></pre>
+    yolo: false
+
+default_profile: chat
+
+server:
+  host: 0.0.0.0
+  port: 8080</code></pre>
     
     <h2>Environment Variables</h2>
-    <pre><code>export KILO_API_KEY="sk-..."
+    <pre><code># Providers
+export KILO_API_KEY="sk-..."
 export GROQ_API_KEY="gsk_..."
-export OPENROUTER_API_KEY="sk-or-..."</code></pre>
-    
-    <h2>Database (Optional)</h2>
-    <pre><code>database:
-  turso_url: "libsql://your-db.turso.io"</code></pre>
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GOOGLE_API_KEY="AIza..."
+export MISTRAL_API_KEY="..."
+export COHERE_API_KEY="..."
+
+# PicoRouter own key
+export PICOROUTER_API_KEY="your-secret"</code></pre>
     
     <h2>CLI Commands</h2>
-    <pre><code>python picorouter.py serve --profile coding
+    <pre><code>python picorouter.py serve --profile chat
 python picorouter.py chat -m "Hello"
 python picorouter.py logs -s
-python picorouter.py config --example</code></pre>
+python picorouter.py key add -n claw --rate-limit 120</code></pre>
 </body>
 </html>

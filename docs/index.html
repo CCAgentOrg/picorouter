@@ -12,9 +12,10 @@
         pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
         pre code { background: none; padding: 0; }
         a { color: #0066cc; }
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
-        .feature { background: #f9f9f9; padding: 1rem; border-radius: 8px; }
-        .feature h3 { margin-top: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+        .card { background: #f9f9f9; padding: 1rem; border-radius: 8px; }
+        .card h3 { margin-top: 0; font-size: 1rem; }
+        .card p { font-size: 0.9rem; color: #666; }
         nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         nav a { margin-right: 1rem; }
         footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #eee; color: #666; }
@@ -30,57 +31,41 @@
     </nav>
     
     <h1>🧩 PicoRouter</h1>
-    <p class="tagline">Your personal OpenRouter — lean, local-first, and you control everything.</p>
+    <p>Your personal OpenRouter — lean, local-first, and you control everything.</p>
     
     <h2>Quick Start</h2>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>Interfaces</h2>
-    <div class="feature-grid">
-        <div class="feature">
-            <h3>📡 API</h3>
-            <p>REST API at /v1/chat/completions</p>
-        </div>
-        <div class="feature">
-            <h3>🐍 SDK</h3>
-            <p>Python client library</p>
-        </div>
-        <div class="feature">
-            <h3>⌨️ CLI</h3>
-            <p>serve, chat, logs, key commands</p>
-        </div>
-        <div class="feature">
-            <h3>🌐 Web UI</h3>
-            <p>Separate PWA — <a href="https://github.com/CCAgentOrg/picorouter-web">picorouter-web</a></p>
-        </div>
+    <h2>Supported Providers</h2>
+    <div class="grid">
+        <div class="card"><h3>🖥️ Local</h3><p>Ollama, LM Studio</p></div>
+        <div class="card"><h3>☁️ Cloud</h3><p>Kilo, Groq, OpenRouter</p></div>
+        <div class="card"><h3>🤖 Major</h3><p>OpenAI, Anthropic, Google, Mistral</p></div>
+        <div class="card"><h3>🔗 Aggregators</h3><p>Together, DeepInfra, Fireworks</p></div>
     </div>
     
     <h2>Features</h2>
-    <div class="feature-grid">
-        <div class="feature">
-            <h3>🌊 Local-First</h3>
-            <p>Ollama & LM Studio — free, unlimited, private</p>
-        </div>
-        <div class="feature">
-            <h3>☁️ Cloud Fallback</h3>
-            <p>Kilo, Groq, OpenRouter — seamless failover</p>
-        </div>
-        <div class="feature">
-            <h3>🧠 Intelligent Routing</h3>
-            <p>Auto-detects code, reasoning, short/long prompts</p>
-        </div>
-        <div class="feature">
-            <h3>🔑 Multi-Key Auth</h3>
-            <p>Per-key capabilities & rate limits</p>
-        </div>
+    <div class="grid">
+        <div class="card"><h3>🌊 Local-First</h3><p>Free, unlimited, private</p></div>
+        <div class="card"><h3>🔄 Auto-Failover</h3><p>Seamless cloud fallback</p></div>
+        <div class="card"><h3>🧠 Content Routing</h3><p>Auto-detect code/reasoning</p></div>
+        <div class="card"><h3>🔐 Multi-Key Auth</h3><p>Per-key limits & caps</p></div>
+        <div class="card"><h3>📊 Usage Tracking</h3><p>Tokens, cost, logs</p></div>
+        <div class="card"><h3>🐳 Docker</h3><p>Alpine ~50MB</p></div>
     </div>
     
-    <h2>Docker</h2>
+    <h2>Interfaces</h2>
+    <ul>
+        <li><strong>API:</strong> REST at /v1/chat/completions</li>
+        <li><strong>CLI:</strong> serve, chat, logs, key commands</li>
+        <li><strong>Web UI:</strong> <a href="https://github.com/CCAgentOrg/picorouter-web">picorouter-web</a></li>
+    </ul>
+    
+    <h2>Run</h2>
     <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>
     
     <footer>
-        <p>🧩 PicoRouter — <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a> — MIT License</p>
+        <p>🧩 PicoRouter — <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a></p>
     </footer>
 </body>
 </html>
-# Trigger rebuild
