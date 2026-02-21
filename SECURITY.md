@@ -19,90 +19,73 @@ Found a security issue? Please report responsibly.
 
 ---
 
-## Security Considerations
+## Security Features
 
-### 🔴 Critical — You Must Address
+### ✅ Authentication (Added)
 
-**1. No Authentication**
-The API server has no built-in authentication. By default, anyone who can reach the server can use it.
+Protect your API with a key:
 
-**Mitigation:**
-- Bind to `localhost` only: `--host 127.0.0.1`
-- Use firewall to restrict access
-- Or put behind a reverse proxy with auth (nginx, Caddy)
+```bash
+# Via CLI
+python picorouter.py serve --api-key "your-secret-key"
 
-**2. No HTTPS**
-Server runs plain HTTP. API keys and data sent in plain text.
+# Or environment variable
+export PICOROUTER_API_KEY="your-secret-key"
+```
 
-**Mitigation:**
-- Run behind a reverse proxy with TLS
-- Use SSH tunneling for remote access
-- Never expose to public internet directly
-
----
-
-### 🟠 High — Should Address
-
-**3. API Keys in Config**
-API keys stored in plain text in `picorouter.yaml`.
-
-**Mitigation:**
-- Use environment variables instead:
-  ```bash
-  export KILO_API_KEY="sk-..."
-  export GROQ_API_KEY="gsk_..."
-  ```
-- Restrict file permissions: `chmod 600 picorouter.yaml`
-
-**4. No Rate Limiting**
-No built-in rate limiting. Vulnerable to abuse/cost spikes.
-
-**Mitigation:**
-- Add rate limiting at reverse proxy level
-- Use cloud provider's rate limits
-- Monitor `/stats` endpoint
+Client usage:
+```bash
+curl -H "Authorization: Bearer your-secret-key" \
+  http://localhost:8080/v1/chat/completions
+```
 
 ---
 
-### 🟡 Medium — Consider
+### ✅ Rate Limiting (Added)
 
-**5. Verbose Error Messages**
-Errors may leak internal details in production.
+Built-in rate limiting (60 req/min by default):
 
-**Mitigation:**
-- Catch exceptions and return generic messages
-- Log detailed errors server-side only
+```bash
+# Custom rate limit
+python picorouter.py serve --rate-limit 100
 
-**6. No Input Validation**
-Some endpoints don't validate input thoroughly.
+# Disable rate limiting
+python picorouter.py serve --rate-limit 0
+```
 
-**Current behavior:**
-- `/logs?limit=N` accepts any integer
-- `messages` field accepts any JSON
+---
 
-**Mitigation:**
-- Add input sanitization
-- Limit request sizes
+### ✅ Input Validation (Added)
+
+- Request size limited to 1MB
+- Messages array limited to 50 items
+- `max_tokens` limited to 32000
+- Whitelisted parameters only
+
+---
+
+### ✅ Generic Error Messages (Added)
+
+Internal errors not exposed to clients. Detailed errors logged server-side.
 
 ---
 
 ## Best Practices
 
-### Production Deployment
-
+### Development
 ```bash
-# 1. Don't expose to internet
-python picorouter.py serve --host 127.0.0.1 --port 8080
+# Local only, no auth needed
+python picorouter.py serve
+```
 
-# 2. Use environment variables for secrets
-export KILO_API_KEY="sk-..."
-export GROQ_API_KEY="gsk_..."
-
-# 3. Secure config file
-chmod 600 picorouter.yaml
-
-# 4. Run behind nginx with auth
-# See: docs/production-nginx.conf
+### Production
+```bash
+# Secure: localhost only + auth + rate limit
+python picorouter.py serve \
+  --host 127.0.0.1 \
+  --port 8080 \
+  --api-key "your-secret-key" \
+  --rate-limit 60
 ```
 
 ### Network Security
@@ -110,29 +93,14 @@ chmod 600 picorouter.yaml
 | Environment | Recommendation |
 |-------------|----------------|
 | Local only  | Bind to 127.0.0.1 |
-| Local network | Firewall rules |
-| Production  | Reverse proxy + HTTPS + auth |
-
----
-
-## Security Audit Findings
-
-Last audit: February 2025
-
-| Issue | Severity | Status |
-|-------|----------|--------|
-| No authentication | Critical | Mitigated via docs |
-| No HTTPS | Critical | Mitigated via docs |
-| API keys in config | High | Use env vars |
-| No rate limiting | High | Manual mitigation |
-| Error message leaks | Medium | Accepted risk |
-| Input validation | Medium | Accepted risk |
+| Local network | Add auth + firewall |
+| Production  | Use docs/production-nginx.conf |
 
 ---
 
 ## Dependencies
 
-We aim to keep dependencies minimal and secure:
+Minimal attack surface:
 
 - `pyyaml` — Config parsing
 - `httpx` — HTTP client
@@ -143,4 +111,4 @@ No known CVEs in current dependencies.
 
 ## Changelog
 
-- **2025-02-21** — Initial security policy
+- **2025-02-21** — Security policy + rate limiting + auth added

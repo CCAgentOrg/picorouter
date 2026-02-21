@@ -71,6 +71,8 @@ def main():
     serve_parser.add_argument("--profile", "-p", default="chat")
     serve_parser.add_argument("--host", default="0.0.0.0")
     serve_parser.add_argument("--port", "-P", type=int, default=8080)
+    serve_parser.add_argument("--api-key", help="Protect API with key (or set PICOROUTER_API_KEY env)")
+    serve_parser.add_argument("--rate-limit", "-r", type=int, default=60, help="Requests per minute (0 to disable)")
     
     # Chat
     chat_parser = subparsers.add_parser("chat", help="Chat")
@@ -116,7 +118,13 @@ def main():
     
     if args.command == "serve":
         print(f"📋 Profile: {router.profile_name}")
-        run_server(router, args.host, args.port)
+        run_server(
+            router, 
+            args.host, 
+            args.port,
+            api_key=args.api_key,
+            rate_limit=args.rate_limit
+        )
     
     elif args.command == "chat":
         messages = [{"role": "user", "content": args.message}]
