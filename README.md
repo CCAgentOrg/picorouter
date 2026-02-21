@@ -8,12 +8,13 @@
 
 > Your personal OpenRouter — lean, local-first, AI model router
 
-Bring all your models together — configure routing profiles, and PicoRouter automatically picks the best one for each request.
+**Security-first** — Keep your API keys safe. Instead of pasting keys into random apps you want to try, route all requests through PicoRouter and control access with your own keys.
 
 **One router, many apps** — Run locally, then point OpenClaw, VSCode, Cursor, Continue to `http://localhost:8080/v1`.
 
 ## Features
 
+- **Security-first** — Never expose your API keys to third-party apps. Route everything through PicoRouter with your own credentials.
 - **Local-first** — Ollama, LM Studio support with auto-failover
 - **Intelligent routing** — Content-aware (code, reasoning, length) and header-based
 - **15+ providers** — OpenAI, Anthropic, Google, Mistral, Cohere, and aggregators
