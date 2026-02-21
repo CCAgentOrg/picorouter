@@ -36,30 +36,33 @@
     <h2>Quick Start</h2>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>Supported Providers</h2>
+    <h2>Virtual Providers</h2>
     <div class="grid">
-        <div class="card"><h3>🖥️ Local</h3><p>Ollama, LM Studio</p></div>
-        <div class="card"><h3>☁️ Cloud</h3><p>Kilo, Groq, OpenRouter</p></div>
-        <div class="card"><h3>🤖 Major</h3><p>OpenAI, Anthropic, Google, Mistral</p></div>
-        <div class="card"><h3>🔗 Aggregators</h3><p>Together, DeepInfra, Fireworks</p></div>
+        <div class="card"><h3>🔒 Privacy</h3><p>Local only</p></div>
+        <div class="card"><h3>💸 Free</h3><p>Local + free cloud</p></div>
+        <div class="card"><h3>⚡ Fast</h3><p>Groq, Kilo</p></div>
+        <div class="card"><h3>🚀 SOTA</h3><p>GPT-4, Claude</p></div>
     </div>
     
     <h2>Features</h2>
     <div class="grid">
-        <div class="card"><h3>🌊 Local-First</h3><p>Free, unlimited, private</p></div>
+        <div class="card"><h3>🌊 Local-First</h3><p>Ollama, LM Studio</p></div>
         <div class="card"><h3>🔄 Auto-Failover</h3><p>Seamless cloud fallback</p></div>
-        <div class="card"><h3>🧠 Content Routing</h3><p>Auto-detect code/reasoning</p></div>
+        <div class="card"><h3>🧠 Content Routing</h3><p>Code/reasoning detection</p></div>
+        <div class="card"><h3>📡 Header Routing</h3><p>X-PicoRouter-* headers</p></div>
         <div class="card"><h3>🔐 Multi-Key Auth</h3><p>Per-key limits & caps</p></div>
-        <div class="card"><h3>📊 Usage Tracking</h3><p>Tokens, cost, logs</p></div>
+        <div class="card"><h3>💾 Storage</h3><p>JSONL, SQLite, Turso</p></div>
+        <div class="card"><h3>🔑 Secrets</h3><p>Env, Vaultwarden</p></div>
         <div class="card"><h3>🐳 Docker</h3><p>Alpine ~50MB</p></div>
     </div>
     
-    <h2>Interfaces</h2>
-    <ul>
-        <li><strong>API:</strong> REST at /v1/chat/completions</li>
-        <li><strong>CLI:</strong> serve, chat, logs, key commands</li>
-        <li><strong>Web UI:</strong> <a href="https://github.com/CCAgentOrg/picorouter-web">picorouter-web</a></li>
-    </ul>
+    <h2>Supported Providers</h2>
+    <div class="grid">
+        <div class="card"><h3>🖥️ Local</h3><p>Ollama, LM Studio</p></div>
+        <div class="card"><h3>☁️ Cloud</h3><p>OpenAI, Anthropic, Google</p></div>
+        <div class="card"><h3>💸 Free</h3><p>Kilo, Groq</p></div>
+        <div class="card"><h3>🔗 Aggregators</h3><p>OpenRouter, Together</p></div>
+    </div>
     
     <h2>Run</h2>
     <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>

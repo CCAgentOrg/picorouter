@@ -17,6 +17,9 @@
         th { background: #f4f4f4; }
         nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         nav a { margin-right: 1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .card { background: #f9f9f9; padding: 1rem; border-radius: 8px; }
+        .card h3 { margin-top: 0; font-size: 1rem; }
     </style>
 </head>
 <body>
@@ -50,7 +53,16 @@
         <tr><td>Azure</td><td>Cloud</td><td>Enterprise</td></tr>
     </table>
     
-    <h2>Routing</h2>
+    <h2>Virtual Providers</h2>
+    <table>
+        <tr><th>Provider</th><th>Behavior</th></tr>
+        <tr><td>picorouter/privacy</td><td>Local only (most private)</td></tr>
+        <tr><td>picorouter/free</td><td>Local → Kilo → Groq → OpenRouter</td></tr>
+        <tr><td>picorouter/fast</td><td>Groq → Kilo → Local</td></tr>
+        <tr><td>picorouter/sota</td><td>OpenAI → Anthropic → Google</td></tr>
+    </table>
+    
+    <h2>Content-Aware Routing</h2>
     <table>
         <tr><th>Condition</th><th>Description</th></tr>
         <tr><td>contains_code</td><td>Functions, classes, imports</td></tr>
@@ -59,6 +71,38 @@
         <tr><td>long_prompt</td><td>Over 2000 chars</td></tr>
         <tr><td>language:python</td><td>Python-specific</td></tr>
     </table>
+    
+    <h2>Header-Based Routing</h2>
+    <table>
+        <tr><th>Header</th><th>Description</th></tr>
+        <tr><td>X-PicoRouter-Profile</td><td>Override profile</td></tr>
+        <tr><td>X-PicoRouter-Provider</td><td>Force provider</td></tr>
+        <tr><td>X-PicoRouter-Model</td><td>Force model</td></tr>
+        <tr><td>X-PicoRouter-Local</td><td>Force local only</td></tr>
+        <tr><td>X-PicoRouter-Yolo</td><td>Enable YOLO mode</td></tr>
+    </table>
+    
+    <h2>Storage Backends</h2>
+    <div class="grid">
+        <div class="card"><h3>JSONL</h3><p>Default, simple file</p></div>
+        <div class="card"><h3>SQLite</h3><p>Embedded, local</p></div>
+        <div class="card"><h3>Turso/LibSQL</h3><p>Local-first, sync</p></div>
+    </div>
+    
+    <h2>Config Backends</h2>
+    <div class="grid">
+        <div class="card"><h3>File (YAML)</h3><p>Default, simple</p></div>
+        <div class="card"><h3>SQLite</h3><p>Single device</p></div>
+        <div class="card"><h3>Turso/LibSQL</h3><p>Team sync</p></div>
+    </div>
+    
+    <h2>Secrets Backends</h2>
+    <div class="grid">
+        <div class="card"><h3>Environment</h3><p>Default</p></div>
+        <div class="card"><h3>.env file</h3><p>Development</p></div>
+        <div class="card"><h3>Vaultwarden</h3><p>Team/shared</p></div>
+        <div class="card"><h3>Encrypted file</h3><p>Local-only</p></div>
+    </div>
     
     <h2>API Endpoints</h2>
     <pre><code>POST /v1/chat/completions
