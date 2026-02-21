@@ -15,8 +15,15 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.21.0",
+    "pyright>=1.1.350",
 ]
 test = ["pytest", "pytest-cov", "pytest-asyncio"]
+
+[tool.pyright]
+include = ["picorouter"]
+pythonVersion = "3.9"
+typeCheckingMode = "basic"
+reportMissingTypeStubs = false
 
 [build-system]
 requires = ["hatchling"]

@@ -51,7 +51,7 @@ def get_tailscale_ip() -> Optional[str]:
     return None
 
 
-def get_all_ips() -> dict:
+def get_all_ips() -> Dict:
     """Get all available network IPs."""
     ips = {
         "localhost": "127.0.0.1",

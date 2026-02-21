@@ -12,7 +12,7 @@ import sqlite3
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 
 CONFIG_PATHS = [
     Path.cwd() / "picorouter.yaml",
@@ -24,7 +24,7 @@ CONFIG_PATHS = [
 class ConfigBackend:
     """Base config backend."""
     
-    def load(self) -> dict:
+    def load(self) -> Dict:
         raise NotImplementedError
     
     def save(self, config: dict) -> None:
@@ -47,7 +47,7 @@ class FileBackend(ConfigBackend):
                 return str(p)
         return str(CONFIG_PATHS[0])
     
-    def load(self) -> dict:
+    def load(self) -> Dict:
         if not Path(self.path).exists():
             return {}
         with open(self.path) as f:
@@ -92,7 +92,7 @@ class SQLiteConfigBackend(ConfigBackend):
         """)
         self.conn.commit()
     
-    def load(self) -> dict:
+    def load(self) -> Dict:
         cur = self.conn.cursor()
         
         # Load config rows
@@ -175,7 +175,7 @@ def create_config_backend(backend: str = "file", **kwargs) -> ConfigBackend:
 
 
 # Legacy API (backward compatible)
-def load_config(path: str = None) -> dict:
+def load_config(path: str = None) -> Dict:
     """Load configuration (legacy)."""
     if path:
         return FileBackend(path).load()
@@ -201,7 +201,7 @@ def find_config() -> Optional[str]:
     return None
 
 
-def generate_example() -> dict:
+def generate_example() -> Dict:
     """Generate example configuration."""
     return {
         "profiles": {

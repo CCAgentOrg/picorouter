@@ -10,7 +10,7 @@ import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 
 
 class StorageBackend:
@@ -19,10 +19,10 @@ class StorageBackend:
     def log(self, entry: dict) -> None:
         raise NotImplementedError
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> Dict:
         raise NotImplementedError
     
-    def get_recent(self, limit: int = 50) -> list:
+    def get_recent(self, limit: int = 50) -> List:
         raise NotImplementedError
     
     def close(self) -> None:
@@ -77,10 +77,10 @@ class JSONLBackend(StorageBackend):
             f.write(json.dumps(entry) + "\n")
         self._update_stats(entry)
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> Dict:
         return self.stats
     
-    def get_recent(self, limit: int = 50) -> list:
+    def get_recent(self, limit: int = 50) -> List:
         if not self.log_file.exists():
             return []
         
@@ -158,7 +158,7 @@ class SQLiteBackend(StorageBackend):
         ))
         self.conn.commit()
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> Dict:
         cur = self.conn.cursor()
         
         stats = {
@@ -207,7 +207,7 @@ class SQLiteBackend(StorageBackend):
         
         return stats
     
-    def get_recent(self, limit: int = 50) -> list:
+    def get_recent(self, limit: int = 50) -> List:
         cur = self.conn.cursor()
         cur.execute("""
             SELECT timestamp, profile, key_name, provider, model, 

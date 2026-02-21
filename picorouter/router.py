@@ -30,7 +30,7 @@ class Router:
         for name, cfg in cloud_providers.items():
             self.cloud[name] = CloudProvider(name, cfg)
     
-    async def chat(self, messages: list, headers: dict = None, **kwargs) -> dict:
+    async def chat(self, messages: list, headers: dict = None, **kwargs) -> Dict:
         """Route and execute chat request."""
         from picorouter.router import route_request
         return await route_request(self, messages, headers=headers, **kwargs)
@@ -42,10 +42,10 @@ class Router:
         except Exception:
             return False
     
-    async def local_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def local_chat(self, messages: list, model: str, **kwargs) -> Dict:
         return await self.local.chat(messages, model, **kwargs)
     
-    async def cloud_chat(self, messages: list, provider: str, **kwargs) -> dict:
+    async def cloud_chat(self, messages: list, provider: str, **kwargs) -> Dict:
         # Handle virtual providers
         if provider.startswith("picorouter/"):
             vp = VirtualProvider(provider, {})
@@ -58,7 +58,7 @@ class Router:
         model = kwargs.pop("model", None)
         return await prov.chat(messages, model, **kwargs)
     
-    async def yolo_chat(self, messages: list, **kwargs) -> dict:
+    async def yolo_chat(self, messages: list, **kwargs) -> Dict:
         """Fire all, return first success."""
         tasks = []
         

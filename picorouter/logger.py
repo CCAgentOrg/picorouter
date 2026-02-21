@@ -1,5 +1,6 @@
 """PicoRouter - Request logging with pluggable backends."""
 
+from typing import List, Dict
 from picorouter.storage import create_backend, COST_PER_MILLION, StorageBackend
 
 
@@ -35,10 +36,10 @@ class Logger:
         
         self.storage.log(entry)
     
-    def get_stats(self) -> dict:
+    def get_stats(self) -> Dict:
         return self.storage.get_stats()
     
-    def get_recent(self, limit: int = 50) -> list:
+    def get_recent(self, limit: int = 50) -> List:
         return self.storage.get_recent(limit)
     
     def close(self):

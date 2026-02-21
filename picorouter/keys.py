@@ -4,7 +4,7 @@ import hashlib
 import secrets
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 
 
 def hash_key(key: str) -> str:
@@ -84,7 +84,7 @@ class KeyManager:
             return True
         return False
     
-    def list_keys(self) -> list:
+    def list_keys(self) -> List:
         """List keys (without showing the actual key)."""
         return [
             {
@@ -98,7 +98,7 @@ class KeyManager:
             for name, info in self.keys.items()
         ]
     
-    def get_config(self) -> dict:
+    def get_config(self) -> Dict:
         """Get keys config for saving."""
         return self.keys
     

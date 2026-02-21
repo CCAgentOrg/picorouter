@@ -114,7 +114,7 @@ def get_provider_info(name: str) -> Optional[dict]:
     return PROVIDERS.get(name.lower())
 
 
-def list_providers() -> list:
+def list_providers() -> List:
     """List all available provider names."""
     return list(PROVIDERS.keys())
 
@@ -156,10 +156,10 @@ class BaseProvider:
         self.api_key = config.get("api_key")
         self.models = config.get("models", [])
     
-    async def chat(self, messages: list, model: str = None, **kwargs) -> dict:
+    async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         raise NotImplementedError
     
-    async def list_models(self) -> list:
+    async def list_models(self) -> List:
         return self.models
 
 
@@ -183,7 +183,7 @@ class LocalProvider(BaseProvider):
         self.provider = provider
         self.models = config.get("models", ["llama3"])
     
-    async def chat(self, messages: list, model: str = None, **kwargs) -> dict:
+    async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         model = model or self.models[0]
         
         if self.provider == "lmstudio":
@@ -198,7 +198,7 @@ class LocalProvider(BaseProvider):
             resp.raise_for_status()
             return resp.json()
     
-    async def list_models(self) -> list:
+    async def list_models(self) -> List:
         if self.provider == "lmstudio":
             url = f"{self.endpoint}/v1/models"
         else:
@@ -247,7 +247,7 @@ class CloudProvider(BaseProvider):
             if self.api_key:
                 self.headers["x-api-key"] = self.api_key
     
-    async def chat(self, messages: list, model: str = None, **kwargs) -> dict:
+    async def chat(self, messages: list, model: str = None, **kwargs) -> Dict:
         model = model or (self.models[0] if self.models else "gpt-3.5-turbo")
         
         # Provider-specific handling
@@ -262,7 +262,7 @@ class CloudProvider(BaseProvider):
         else:
             return await self._openai_chat(messages, model, **kwargs)
     
-    async def _openai_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def _openai_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Standard OpenAI-compatible chat."""
         payload = {
             "model": model,
@@ -290,7 +290,7 @@ class CloudProvider(BaseProvider):
                     raise RateLimitError(f"Rate limited by {self.name}")
                 raise
     
-    async def _anthropic_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def _anthropic_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Anthropic API."""
         system = ""
         anthropic_messages = []
@@ -339,7 +339,7 @@ class CloudProvider(BaseProvider):
                 }
             }
     
-    async def _google_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def _google_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Google Gemini API."""
         contents = []
         for msg in messages:
@@ -376,7 +376,7 @@ class CloudProvider(BaseProvider):
                 "usage": {"total_tokens": 0}
             }
     
-    async def _replicate_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def _replicate_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Replicate API."""
         payload = {
             "version": model,
@@ -415,7 +415,7 @@ class CloudProvider(BaseProvider):
                 "usage": {"total_tokens": 0}
             }
     
-    async def _azure_chat(self, messages: list, model: str, **kwargs) -> dict:
+    async def _azure_chat(self, messages: list, model: str, **kwargs) -> Dict:
         """Azure OpenAI API."""
         payload = {
             "messages": messages,
@@ -440,7 +440,7 @@ class CloudProvider(BaseProvider):
             resp.raise_for_status()
             return resp.json()
     
-    async def list_models(self) -> list:
+    async def list_models(self) -> List:
         return self.models
 
 
@@ -487,7 +487,7 @@ class VirtualProvider(BaseProvider):
         self.config = config
         self.route_type = name.replace("picorouter/", "")
     
-    async def chat(self, messages: list, model: str = None, router=None, **kwargs) -> dict:
+    async def chat(self, messages: list, model: str = None, router=None, **kwargs) -> Dict:
         """Route to appropriate providers based on type."""
         
         if self.route_type == "privacy":
@@ -576,5 +576,5 @@ class VirtualProvider(BaseProvider):
         
         raise Exception("No SOTA providers available")
     
-    async def list_models(self) -> list:
+    async def list_models(self) -> List:
         return []

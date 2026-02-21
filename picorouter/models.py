@@ -2,13 +2,13 @@
 
 import json
 import httpx
-from typing import Optional
+from typing import Optional, List
 
 # models.dev API endpoint (CSV export)
 MODELS_DEV_URL = "https://models.dev/api"
 
 
-async def fetch_models_dev_models() -> list:
+async def fetch_models_dev_models() -> List[dict]:
     """Fetch all models from models.dev."""
     # Try the main page which has model data
     async with httpx.AsyncClient(timeout=30.0) as client:
