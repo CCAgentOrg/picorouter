@@ -52,6 +52,20 @@ DEFAULT_MODELS = {
     "deepinfra": ["meta-llama/Llama-3-70b-instruct"],
     "fireworks": ["llama-v3-70b-instruct"],
     "anyscale": ["meta-llama/Llama-3-70b-Instruct"],
+    
+    # Virtual providers (meta-routers)
+    "picorouter/privacy": [],   # Local only (most private)
+    "picorouter/free": [],      # Free providers
+    "picorouter/fast": [],      # Fastest providers
+    "picorouter/sota": [],      # Best models
+}
+
+# Provider categories for virtual routing
+PROVIDER_CATEGORIES = {
+    "local": ["ollama", "lmstudio"],
+    "free": ["kilo", "groq", "openrouter"],  # Free tier available
+    "fast": ["groq", "kilo"],  # Known for speed
+    "sota": ["openai", "anthropic", "google"],  # Best models
 }
 
 
@@ -394,12 +408,103 @@ class Router:
         return await self.local.chat(messages, model, **kwargs)
     
     async def cloud_chat(self, messages: list, provider: str, **kwargs) -> dict:
+        # Handle virtual providers
+        if provider.startswith("picorouter/"):
+            return await self._virtual_provider_chat(messages, provider, **kwargs)
+        
         prov = self.cloud.get(provider)
         if not prov:
             raise Exception(f"Unknown provider: {provider}")
         
         model = kwargs.pop("model", None)
         return await prov.chat(messages, model, **kwargs)
+    
+    async def _virtual_provider_chat(self, messages: list, virtual_provider: str, **kwargs) -> dict:
+        """Handle virtual providers like picorouter/privacy, free, fast, sota."""
+        
+        if virtual_provider == "picorouter/privacy":
+            # Privacy: local only
+            local = self.profile.get("local", {})
+            for model in local.get("models", []):
+                try:
+                    if await self.try_local(messages, model, **kwargs):
+                        return await self.local_chat(messages, model, **kwargs)
+                except Exception:
+                    continue
+            raise Exception("No local providers available")
+        
+        elif virtual_provider == "picorouter/free":
+            # Free: try local first, then free cloud (Kilo, Groq free)
+            local = self.profile.get("local", {})
+            for model in local.get("models", []):
+                try:
+                    if await self.try_local(messages, model, **kwargs):
+                        return await self.local_chat(messages, model, **kwargs)
+                except Exception:
+                    continue
+            
+            # Try free cloud providers
+            free_providers = ["kilo", "groq", "openrouter"]
+            for prov_name in free_providers:
+                prov = self.cloud.get(prov_name)
+                if prov:
+                    try:
+                        return await prov.chat(messages, None, **kwargs)
+                    except RateLimitError:
+                        continue
+                    except Exception:
+                        continue
+            
+            raise Exception("No free providers available")
+        
+        elif virtual_provider == "picorouter/fast":
+            # Fast: Groq first, then Kilo, then others
+            fast_providers = ["groq", "kilo", "openrouter"]
+            for prov_name in fast_providers:
+                prov = self.cloud.get(prov_name)
+                if prov:
+                    try:
+                        return await prov.chat(messages, None, **kwargs)
+                    except RateLimitError:
+                        continue
+                    except Exception:
+                        continue
+            
+            # Fallback to local
+            local = self.profile.get("local", {})
+            for model in local.get("models", []):
+                try:
+                    if await self.try_local(messages, model, **kwargs):
+                        return await self.local_chat(messages, model, **kwargs)
+                except Exception:
+                    continue
+            
+            raise Exception("No fast providers available")
+        
+        elif virtual_provider == "picorouter/sota":
+            # SOTA: Best models - OpenAI, Anthropic, Google
+            sota_providers = ["openai", "anthropic", "google"]
+            for prov_name in sota_providers:
+                prov = self.cloud.get(prov_name)
+                if prov:
+                    try:
+                        return await prov.chat(messages, None, **kwargs)
+                    except RateLimitError:
+                        continue
+                    except Exception:
+                        continue
+            
+            # Fallback to any available
+            for prov_name, prov in self.cloud.items():
+                try:
+                    return await prov.chat(messages, None, **kwargs)
+                except Exception:
+                    continue
+            
+            raise Exception("No SOTA providers available")
+        
+        else:
+            raise Exception(f"Unknown virtual provider: {virtual_provider}")
     
     async def yolo_chat(self, messages: list, **kwargs) -> dict:
         """Fire all, return first success."""
