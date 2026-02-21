@@ -68,7 +68,13 @@ def generate_example() -> dict:
             }
         },
         "default_profile": "chat",
-        "server": {"host": "0.0.0.0", "port": 8080}
+        "server": {"host": "0.0.0.0", "port": 8080},
+        "storage": {
+            "backend": "jsonl",  # jsonl, sqlite, turso
+            "log_file": "logs/requests.jsonl",
+            # For SQLite: "db_path": "logs/picorouter.db"
+            # For Turso: "turso_url": "libsql://my-db.turso.io", "turso_token": "..."
+        }
     }
 
 

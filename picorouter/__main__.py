@@ -245,7 +245,16 @@ def main():
     # Initialize
     profile_name = getattr(args, "profile", None)
     router = Router(config, profile_name)
-    router.logger = Logger()
+    
+    # Initialize logger with storage config
+    storage_cfg = config.get("storage", {})
+    router.logger = Logger(
+        backend=storage_cfg.get("backend", "jsonl"),
+        log_file=storage_cfg.get("log_file", "logs/requests.jsonl"),
+        db_path=storage_cfg.get("db_path", "logs/picorouter.db"),
+        turso_url=storage_cfg.get("turso_url"),
+        turso_token=storage_cfg.get("turso_token")
+    )
     router.config = config  # Store for key manager
     
     if args.command == "serve":

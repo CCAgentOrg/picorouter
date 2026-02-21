@@ -1,91 +1,45 @@
-"""PicoRouter - Request logging."""
+"""PicoRouter - Request logging with pluggable backends."""
 
-import json
-from pathlib import Path
-from datetime import datetime
-
-COST_PER_MILLION = {
-    # Local (free)
-    "local:ollama": 0, 
-    "local:lmstudio": 0,
-    
-    # Free / Low-cost
-    "kilo": 0,
-    "groq": 0.18,
-    "openrouter": 0,
-    
-    # Major providers (approximate, check for latest)
-    "openai": 0.60,      # gpt-4o-mini
-    "anthropic": 0.80,   # claude-3-haiku
-    "google": 0.00,      # gemini-1.5-flash (free tier)
-    "mistral": 0.40,     # mistral-small
-    "cohere": 0.30,      # command-r-plus
-    "ai21": 0.40,        # jamba-1.5-mini
-    
-    # Aggregators
-    "together": 0.60,
-    "deepinfra": 0.44,
-    "fireworks": 0.60,
-    "anyscale": 0.50,
-    
-    # Replicate (varies by model)
-    "replicate": 0.50,
-    
-    # Azure (varies by deployment)
-    "azure": 1.00,
-    
-    # Default
-    "default": 0.50
-}
+from picorouter.storage import create_backend, COST_PER_MILLION, StorageBackend
 
 
 class Logger:
-    """Request logger with JSONL + stats."""
+    """Request logger with swappable storage backends."""
     
-    def __init__(self, log_file: str = "logs/requests.jsonl"):
-        self.log_file = Path(log_file)
-        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(
+        self, 
+        backend: str = "jsonl",
+        log_file: str = "logs/requests.jsonl",
+        db_path: str = "logs/picorouter.db",
+        turso_url: str = None,
+        turso_token: str = None
+    ):
+        # Create storage backend
+        if backend == "jsonl":
+            self.storage = create_backend("jsonl", log_file=log_file)
+        elif backend == "sqlite":
+            self.storage = create_backend("sqlite", db_path=db_path)
+        elif backend == "turso":
+            self.storage = create_backend("turso", url=turso_url, auth_token=turso_token)
+        else:
+            self.storage = create_backend("jsonl", log_file=log_file)
         
-        self.stats = {
-            "total_requests": 0, "by_provider": {}, "by_model": {},
-            "by_profile": {}, "total_tokens": 0, "total_cost_usd": 0, "errors": 0
-        }
+        self._cost_per_million = COST_PER_MILLION
     
     def log(self, entry: dict):
-        # Write JSONL
-        with open(self.log_file, "a") as f:
-            f.write(json.dumps(entry) + "\n")
-        
-        # Update stats
-        self.stats["total_requests"] += 1
-        
-        for key in ["provider", "model", "profile"]:
-            val = entry.get(key, "unknown")
-            bucket = f"by_{key}"
-            self.stats[bucket][val] = self.stats[bucket].get(val, 0) + 1
-        
+        # Calculate cost
         tokens = entry.get("tokens_used", 0)
-        self.stats["total_tokens"] += tokens
-        
         prov = entry.get("provider", "unknown")
-        cost = (tokens / 1_000_000) * COST_PER_MILLION.get(prov, 0.50)
-        self.stats["total_cost_usd"] += cost
+        cost = (tokens / 1_000_000) * self._cost_per_million.get(prov, 0.50)
+        entry["cost_usd"] = cost
         
-        if entry.get("status") == "error":
-            self.stats["errors"] += 1
+        self.storage.log(entry)
     
     def get_stats(self) -> dict:
-        return self.stats
+        return self.storage.get_stats()
     
     def get_recent(self, limit: int = 50) -> list:
-        if not self.log_file.exists():
-            return []
-        
-        entries = []
-        with open(self.log_file) as f:
-            for line in f:
-                try:
-                    entries.append(json.loads(line))
-                except:
-                    continue
-        return entries[-limit:]
+        return self.storage.get_recent(limit)
+    
+    def close(self):
+        self.storage.close()
