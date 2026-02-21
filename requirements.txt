@@ -1,11 +1,4 @@
-# PicoRouter Dependencies
-
-# Core only - minimal for embedded/IoT
+# PicoRouter Dependencies - Core
 pyyaml>=6.0
 httpx>=0.24.0
 requests>=2.28
-
-# Testing & Coverage
-pytest>=7.0
-pytest-cov>=4.0
-pytest-asyncio>=0.21.0

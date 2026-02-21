@@ -1,16 +1,16 @@
 # PicoRouter Dockerfile
-# Alpine-based for minimal size
+# Lean Alpine-based image ~80MB
 
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 LABEL maintainer="CashlessConsumer"
-LABEL description="Minimal AI Model Router"
+LABEL description="Minimal AI Model Router - Lean, Local-First"
 
-# Install dependencies
-RUN apk add --no-cache \
-    bash \
+# Install minimal deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    git
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir --upgrade pip
 
 WORKDIR /app
 
