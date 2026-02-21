@@ -320,6 +320,25 @@ def main():
         
         else:
             secrets_parser.print_help()
+    
+    elif args.command == "models":
+        from picorouter.models import models_cli
+        models_cli(args)
+    
+    # Models (discovery from models.dev)
+    models_parser = subparsers.add_parser("models", help="Model discovery from models.dev")
+    models_subparsers = models_parser.add_subparsers(dest="models_command")
+    
+    models_search = models_subparsers.add_parser("search", help="Search models")
+    models_search.add_argument("--free", action="store_true", help="Free models only")
+    models_search.add_argument("--context", type=int, default=0, help="Min context length")
+    models_search.add_argument("--provider", "-p", help="Filter by provider")
+    models_search.add_argument("--limit", "-n", type=int, default=20, help="Max results")
+    
+    models_sync = models_subparsers.add_parser("sync", help="Sync models to config")
+    models_sync.add_argument("--output", "-o", help="Output file for config")
+    
+    models_providers = models_subparsers.add_parser("providers", help="List available providers")
 
 
 if __name__ == "__main__":
