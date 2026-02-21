@@ -12,6 +12,8 @@
         pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
         pre code { background: none; padding: 0; }
         a { color: #0066cc; }
+        ul { margin-left: 1.5rem; }
+        li { margin: 0.5rem 0; }
         nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         nav a { margin-right: 1rem; }
     </style>
@@ -27,32 +29,62 @@
     
     <h1>🚀 Setup</h1>
     
-    <h2>One-Command Install</h2>
+    <h2>Quick Install</h2>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>Step-by-Step</h2>
+    <h2>Manual</h2>
+    <pre><code>git clone https://github.com/CCAgentOrg/picorouter
+cd picorouter
+pip install -r requirements.txt
+cp config.example.yaml picorouter.yaml
+python picorouter.py serve</code></pre>
     
-    <h3>1. Clone</h3>
-    <pre><code>git clone https://github.com/CCAgentOrg/picorouter.git
-cd picorouter</code></pre>
+    <h2>Docker</h2>
+    <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>
     
-    <h3>2. Install</h3>
-    <pre><code>pip install -r requirements.txt</code></pre>
-    <p>Or with uv:</p>
-    <pre><code>uv pip install -r requirements.txt</code></pre>
+    <h2>API Keys</h2>
+    <p>PicoRouter supports multiple backends for storing provider API keys:</p>
     
-    <h3>3. Configure</h3>
-    <pre><code>python picorouter.py config --example
-# Edit picorouter.yaml with your API keys</code></pre>
+    <h3>1. Environment Variables (Default)</h3>
+    <pre><code>export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GROQ_API_KEY="gsk_..."
+export KILO_API_KEY="..."</code></pre>
     
-    <h3>4. Run</h3>
-    <pre><code>python picorouter.py serve</code></pre>
+    <h3>2. .env File</h3>
+    <pre><code>export PICOROUTER_SECRETS_BACKEND=dotenv
+
+# Create .env file
+echo 'OPENAI_API_KEY="sk-..."' > .env
+echo 'ANTHROPIC_API_KEY="sk-ant-..."' >> .env</code></pre>
     
-    <h2>Connect Apps</h2>
-    <table>
-        <tr><td>OpenClaw</td><td><code>baseUrl: http://localhost:8080/v1</code></td></tr>
-        <tr><td>VSCode</td><td><code>openai.apiBaseUrl: http://localhost:8080/v1</code></td></tr>
-        <tr><td>Claude Code</td><td><code>OPENAI_API_BASE=http://localhost:8080/v1</code></td></tr>
-    </table>
+    <h3>3. Vaultwarden (Self-hosted Bitwarden)</h3>
+    <pre><code>export PICOROUTER_SECRETS_BACKEND=vaultwarden
+export VAULTWARDEN_TOKEN="your-session-token"
+
+# CLI to manage
+python picorouter.py secrets list</code></pre>
+    
+    <h3>4. Encrypted File</h3>
+    <pre><code>export PICOROUTER_SECRETS_BACKEND=encrypted
+export PICOROUTER_SECRETS_PASSWORD="your-password"</code></pre>
+    
+    <h2>CLI Commands</h2>
+    <pre><code># Generate example config
+python picorouter.py config --example
+
+# Start server
+python picorouter.py serve --profile chat
+
+# Tailscale support
+python picorouter.py serve --host tailscale
+python picorouter.py serve --show-ips
+
+# Manage API keys (for PicoRouter itself)
+python picorouter.py key add -n mykey --rate-limit 60
+
+# Manage provider secrets
+python picorouter.py secrets list
+python picorouter.py secrets set --provider openai --key "sk-..."</code></pre>
 </body>
 </html>
