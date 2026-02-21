@@ -3,6 +3,10 @@
 import asyncio
 import os
 import httpx
+from picorouter.secrets import SecretsManager, PROVIDER_KEYS
+
+# Initialize secrets manager
+_secrets = SecretsManager()
 
 # All supported provider endpoints
 PROVIDER_ENDPOINTS = {
@@ -23,7 +27,7 @@ PROVIDER_ENDPOINTS = {
     "together": "https://api.together.ai/v1/",
     "replicate": "https://api.replicate.com/v1/",
     "deepinfra": "https://api.deepinfra.com/v1/openai/v1/",
-    "fireworks": "https://api.fireworks.ai/v1/v1/",
+    "fireworks": "https://api.fireworks.ai/v1/",
     "anyscale": "https://api.endpoints.anyscale.com/v1/",
     "azure": "https://{resource}.openai.azure.com/openai/deployments/{deployment}/",
     
@@ -110,7 +114,10 @@ class CloudProvider:
     def __init__(self, name: str, config: dict):
         self.name = name
         self.base_url = config.get("base_url") or PROVIDER_ENDPOINTS.get(name, "")
-        self.api_key = config.get("api_key") or os.getenv(f"{name.upper()}_API_KEY", "")
+        
+        # Get API key from secrets manager
+        self.api_key = config.get("api_key") or _secrets.get_provider_key(name)
+        
         self.models = config.get("models", []) or DEFAULT_MODELS.get(name, [])
         
         # Provider-specific headers

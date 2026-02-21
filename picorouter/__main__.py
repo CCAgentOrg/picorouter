@@ -157,6 +157,17 @@ def main():
     key_remove = key_subparsers.add_parser("remove", help="Remove API key")
     key_remove.add_argument("name", help="Key name to remove")
     
+    # Secrets management
+    secrets_parser = subparsers.add_parser("secrets", help="Provider API key management")
+    secrets_parser.add_argument("--backend", "-b", default=None, help="Backend: env, dotenv, vaultwarden, encrypted")
+    secrets_subparsers = secrets_parser.add_subparsers(dest="secrets_command")
+    
+    secrets_list = secrets_subparsers.add_parser("list", help="List configured provider keys")
+    secrets_set = secrets_subparsers.add_parser("set", help="Set provider API key")
+    secrets_set.add_argument("--provider", "-p", required=True, help="Provider name")
+    secrets_set.add_argument("--key", "-k", required=True, help="API key value")
+    secrets_show = secrets_subparsers.add_parser("show", help="Show available backends")
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -272,6 +283,34 @@ def main():
                 status = "✓" if log.get("status") == "success" else "✗"
                 key = log.get("key", "")
                 print(f"{status} {ts} | {key[:10]} | {log.get('provider', '?')[:12]} | {log.get('tokens_used', 0)} tokens")
+    
+    elif args.command == "secrets":
+        from picorouter.secrets import SecretsManager
+        sm = SecretsManager(args.backend)
+        
+        if args.secrets_command == "list":
+            print("🔐 Configured provider keys:")
+            for p in sm.list_providers():
+                status = "✅" if p["configured"] else "❌"
+                hint = p["key_hint"] or ""
+                print(f"  {status} {p['provider']:12} {hint}")
+        
+        elif args.secrets_command == "set":
+            sm.set_provider_key(args.provider, args.key)
+            print(f"✅ Set {args.provider} API key")
+        
+        elif args.secrets_command == "show":
+            print("🔐 Available backends:")
+            print("  env        - Environment variables (default)")
+            print("  dotenv     - .env file")
+            print("  vaultwarden - Self-hosted Bitwarden")
+            print("  encrypted  - Encrypted local file")
+            print()
+            print("Set backend:")
+            print("  export PICOROUTER_SECRETS_BACKEND=dotenv")
+        
+        else:
+            secrets_parser.print_help()
 
 
 if __name__ == "__main__":
