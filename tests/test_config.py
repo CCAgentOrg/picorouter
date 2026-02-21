@@ -74,7 +74,8 @@ class TestSQLiteConfigBackend:
                 "profiles": {"chat": {"local": {}}},
                 "default_profile": "chat"
             })
-            profile = backend.get_profile("chat")
+            config = backend.load()
+            profile = config.get("profiles", {}).get("chat")
             assert profile == {"local": {}}
         finally:
             os.unlink(path)
