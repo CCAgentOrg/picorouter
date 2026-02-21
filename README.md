@@ -1,6 +1,6 @@
 # PicoRouter
 
-**Minimal AI model router** — local-first with intelligent cloud fallback + built-in web search.
+**A lean, intelligent router** that manages the cognitive overhead of managing API keys, rate limits, privacy, and model switching.
 
 [🌀 Pico family](https://github.com/cashlessconsumer) — PicoClaw, PicoLM, PicoRouter
 
@@ -11,8 +11,7 @@
 - **Intelligent routing**: Content-aware model selection based on prompt analysis
 - **OpenAI-compatible**: Works with any LLM app (Claude Code, Cursor, Continue, etc.)
 - **Lean**: <50MB memory, minimal dependencies
-- **Built-in search**: Multi-provider web search with Turso logging
-- **Usage tracking**: Full metadata, tokens, cost, duration — stored in Turso or JSONL
+- **Usage tracking**: Full metadata, tokens, cost, duration — stored locally or in Turso
 
 ## Quick Start
 
