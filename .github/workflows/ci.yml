@@ -17,6 +17,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
     
     - name: Install dependencies
       run: |
@@ -25,7 +26,7 @@ jobs:
     
     - name: Run tests with coverage
       run: |
-        pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing
+        pytest tests/ -v --cov=picorouter --cov-report=xml --cov-report=term-missing
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -37,7 +38,10 @@ jobs:
     
     - name: Check syntax
       run: |
-        python -m py_compile picorouter.py
+        python -m py_compile picorouter/__main__.py
+        python -m py_compile picorouter/api.py
+        python -m py_compile picorouter/providers.py
+        python -m py_compile picorouter/router.py
 
   lint:
     runs-on: ubuntu-latest
@@ -55,4 +59,4 @@ jobs:
     
     - name: Lint
       run: |
-        flake8 picorouter.py --max-line-length=100 --ignore=E501,W503 || true
+        flake8 picorouter/ --max-line-length=100 --ignore=E501,W503 || true
