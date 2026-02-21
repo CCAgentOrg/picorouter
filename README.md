@@ -1,8 +1,8 @@
 # PicoRouter
 
-**A lean, intelligent router** that manages the cognitive overhead of managing API keys, rate limits, privacy, and model switching.
+**Your personal OpenRouter** — lean, local-first, and you control everything.
 
-**Bring all your models together** — configure routing profiles based on your presets, and PicoRouter automatically picks the best one for each request.
+Bring all your models together — configure routing profiles, and PicoRouter automatically picks the best one for each request. OpenRouter.ai itself is just one provider in the chain.
 
 [🌀 Pico family](https://github.com/cashlessconsumer) — PicoClaw, PicoLM, PicoRouter
 
