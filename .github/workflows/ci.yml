@@ -19,29 +19,17 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
     
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+    
     - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install pytest pytest-asyncio pytest-cov
+      run: uv pip install --system -r requirements.txt
     
-    - name: Run tests with coverage
-      run: |
-        pytest tests/ -v --cov=picorouter --cov-report=xml --cov-report=term-missing
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: picorouter
-      continue-on-error: true
+    - name: Run tests
+      run: pytest tests/ -v --cov=picorouter --cov-report=term-missing
     
     - name: Check syntax
-      run: |
-        python -m py_compile picorouter/__main__.py
-        python -m py_compile picorouter/api.py
-        python -m py_compile picorouter/providers.py
-        python -m py_compile picorouter/router.py
+      run: python -m py_compile picorouter/__main__.py picorouter/*.py
 
   lint:
     runs-on: ubuntu-latest
@@ -58,5 +46,29 @@ jobs:
       run: pip install flake8
     
     - name: Lint
+      run: flake8 picorouter/ --max-line-length=100 --ignore=E501,W503 || true
+
+  integration:
+    runs-on: ubuntu-latest
+    if: false  # Enable manually or on schedule
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+    
+    - name: Start Ollama
       run: |
-        flake8 picorouter/ --max-line-length=100 --ignore=E501,W503 || true
+        curl -fsSL https://ollama.com/install.sh | sh
+        ollama serve &
+        sleep 10
+        ollama pull llama3
+    
+    - name: Run integration tests
+      run: pytest tests/ -v -k "integration"

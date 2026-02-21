@@ -11,6 +11,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 def pytest_configure(config):
     """Configure pytest."""
     config.addinivalue_line("markers", "asyncio: mark test as async")
+    config.addinivalue_line("markers", "integration: mark test as integration (requires real infra)")
+
+
+def pytest_addoption(parser):
+    """Add custom options."""
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests (requires Ollama running)"
+    )
 
 
 @pytest.fixture(scope="session")
