@@ -1,5 +1,13 @@
 # LATER.md - Future Work
 
+## Provider Health Monitoring (Priority)
+- Add health check endpoint: `/health` returns provider status
+- Background pings to all configured providers
+- Track latency, uptime, error rates per provider
+- Auto-exclude failing providers from routing
+- Simple status page or CLI: `picorouter.py status`
+- Visual indicators: 🟢 healthy, 🟡 degraded, 🔴 down
+
 ## Android/Termux Support
 - Add setup instructions for running PicoRouter on Android via Termux or Pydroid3
 - Document no-root required approach
