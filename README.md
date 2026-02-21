@@ -1,6 +1,6 @@
 # PicoRouter
 
-**Minimal AI model router** — local-first with intelligent cloud fallback.
+**Minimal AI model router** — local-first with intelligent cloud fallback + built-in web search.
 
 [🌀 Pico family](https://github.com/cashlessconsumer) — PicoClaw, PicoLM, PicoRouter
 
@@ -11,7 +11,8 @@
 - **Intelligent routing**: Content-aware model selection based on prompt analysis
 - **OpenAI-compatible**: Works with any LLM app (Claude Code, Cursor, Continue, etc.)
 - **Lean**: <50MB memory, minimal dependencies
-- **Built-in search**: MCP server for your SearXNG instance
+- **Built-in search**: Multi-provider web search with Turso logging
+- **Usage tracking**: Full metadata, tokens, cost, duration — stored in Turso or JSONL
 
 ## Quick Start
 
@@ -73,6 +74,19 @@ picorouter serve --profile yolo
 
 Fires all providers at once, takes first success.
 
+### Turso Database
+
+Store all logs in Turso/LibSQL:
+
+```yaml
+database:
+  turso_url: "libsql://your-db.turso.io"
+```
+
+Tables created automatically:
+- `requests` — chat/completion logs
+- `search_logs` — web search logs
+
 ## Architecture
 
 ```
@@ -91,18 +105,6 @@ Request → Analyze Prompt → Match Routing Rule
 | Groq | Cloud | ✓ Yes |
 | OpenRouter | Cloud | ✓ Yes |
 
-## Configuration
-
-See `config.example.yaml` for full options.
-
-### Environment Variables
-
-```bash
-export KILO_API_KEY="sk-..."
-export GROQ_API_KEY="gsk_..."
-export OPENROUTER_API_KEY="sk-or-..."
-```
-
 ## API Endpoints
 
 ```
@@ -110,10 +112,8 @@ POST /v1/chat/completions
 POST /v1/completions
 GET  /v1/models
 GET  /health
-
-# Usage tracking
 GET  /stats          # Usage statistics
-GET  /logs           # Recent requests (JSONL)
+GET  /logs           # Recent requests
 ```
 
 ## Usage Dashboard
@@ -122,100 +122,54 @@ GET  /logs           # Recent requests (JSONL)
 # View stats
 curl http://localhost:8080/stats
 
-# View recent logs
-curl http://localhost:8080/logs
-curl http://localhost:8080/logs?limit=100
-
 # CLI view
 python picorouter.py logs -s
 python picorouter.py logs -n 20
 ```
 
 Stats include:
-- Total requests
-- Total tokens
-- Total cost (USD, estimated)
-- Requests by routing (seamless/yolo)
-- Requests by provider
-- Requests by model
-- Requests by profile
-- Error count
+- Total requests, tokens, cost (USD)
+- By routing (seamless/yolo), provider, model, profile
 
-Each log entry includes:
-- timestamp, request_id, profile, provider, model
-- routing mode, tokens (in/out/total), duration_ms, cost_usd
-
-## PicoSearch MCP Server
-
-Built-in search via MCP (Model Context Protocol):
+## PicoSearch - Multi-Provider Web Search
 
 ```bash
-# Run the MCP search server
-python mcpsearch.py
+# CLI search
+python picosearch.py -q "query"
+
+# MCP server
+python picosearch.py --mcp
+
+# Stats
+python picosearch.py --stats
 ```
 
-### Tools exposed:
-- `search` - Search the web via SearXNG
-- `search_stats` - View search usage stats
+### Providers (fallback chain):
+1. **SearXNG** — Your instance (free, private)
+2. **Brave** — API (needs key)
+3. **DuckDuckGo** — Free fallback
 
-### Config (picorouter.yaml):
+### Config:
 ```yaml
 search:
   searxng_url: https://ccsearxng.zeabur.app
+  brave_api_key: "your-key"
 
-# Optional: Turso database for logs
 database:
   turso_url: "libsql://your-db.turso.io"
 ```
 
-### Usage in Claude Code / Continue:
-Add to your MCP config:
+### MCP Integration:
 ```json
 {
   "mcpServers": {
-    "picorouter-search": {
+    "picosearch": {
       "command": "python",
-      "args": ["/path/to/picorouter/mcpsearch.py"]
+      "args": ["/path/to/picorouter/picosearch.py", "--mcp"]
     }
   }
 }
 ```
-
-Then use: `Search the web for...` in your AI assistant.
-
-## PicoSearch - Multi-Provider Web Search
-
-Standalone web search with provider fallback + Turso logging:
-
-```bash
-# CLI search
-python picosearch.py -q "Python async best practices"
-
-# Run as MCP server
-python picosearch.py --mcp
-
-# View stats
-python picosearch.py --stats
-```
-
-### Providers (tried in order):
-1. **SearXNG** — Your self-hosted instance (free, private)
-2. **Brave** — API-based (needs key)
-3. **DuckDuckGo** — Free fallback
-
-### Config (picorouter.yaml):
-```yaml
-search:
-  searxng_url: https://ccsearxng.zeabur.app
-  brave_api_key: "your-brave-key"
-
-database:
-  turso_url: "libsql://your-db.turso.io"
-```
-
-### Logs to Turso:
-- `search_logs` table with query, provider, results_count, duration_ms, error
-- Falls back to JSONL if no Turso
 
 ## Use Cases
 
@@ -223,6 +177,7 @@ database:
 2. **Never hit rate limits** — Seamlessly cycle through free tiers
 3. **Content-aware routing** — Code goes to coder models, chat to chat models
 4. **Development workflow** — Use local for speed, cloud for quality
+5. **Web search with logs** — All searches tracked in Turso
 
 ## License
 
