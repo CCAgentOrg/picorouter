@@ -1,0 +1,41 @@
+# PicoRouter Docker Compose
+
+version: '3.8'
+
+services:
+  picorouter:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./picorouter.yaml:/app/picorouter.yaml:ro
+      - ./logs:/app/logs
+    environment:
+      - KILO_API_KEY=${KILO_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    restart: unless-stopped
+
+  # Optional: Web UI
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    command: python web/app.py
+    environment:
+      - PICOROUTER_URL=http://picorouter:8080
+      - PICOROUTER_KEY=${PICOROUTER_KEY}
+    depends_on:
+      - picorouter
+    restart: unless-stopped
+
+  # Optional: TUI (interactive)
+  tui:
+    build: .
+    stdin_open: true
+    tty: true
+    command: python tui/picorouter_tui.py
+    environment:
+      - PICOROUTER_URL=http://picorouter:8080
+    depends_on:
+      - picorouter

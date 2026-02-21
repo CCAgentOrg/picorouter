@@ -8,18 +8,18 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; color: #333; }
         h1, h2, h3 { color: #1a1a1a; margin: 1.5rem 0 1rem; }
-        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-        .tagline { color: #666; font-size: 1.2rem; margin-bottom: 2rem; }
         code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
         pre { background: #1a1a1a; color: #fff; padding: 1rem; border-radius: 8px; overflow-x: auto; }
         pre code { background: none; padding: 0; }
         a { color: #0066cc; }
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 2rem 0; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
         .feature { background: #f9f9f9; padding: 1rem; border-radius: 8px; }
         .feature h3 { margin-top: 0; }
         nav { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
         nav a { margin-right: 1rem; }
         footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #eee; color: #666; }
+        .docs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .doc-card { background: #f0f7ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #0066cc; }
     </style>
 </head>
 <body>
@@ -31,14 +31,45 @@
         <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a>
     </nav>
     
-    <h1>🌀 PicoRouter</h1>
+    <h1>🧩 PicoRouter</h1>
     <p class="tagline">Your personal OpenRouter — lean, local-first, and you control everything.</p>
     
     <h2>Quick Start</h2>
     <pre><code>curl -sL https://raw.githubusercontent.com/CCAgentOrg/picorouter/main/install.sh | bash</code></pre>
     
-    <h2>What is PicoRouter?</h2>
-    <p>Bring all your models together — configure routing profiles, and PicoRouter automatically picks the best one for each request. Connects directly to any cloud provider, model service, or gateway.</p>
+    <h2>All the Interfaces</h2>
+    <div class="docs-grid">
+        <div class="doc-card">
+            <h3>📡 API</h3>
+            <p>RESTful OpenAI-compatible API</p>
+            <a href="api.html">Docs →</a>
+        </div>
+        <div class="doc-card">
+            <h3>🐍 SDK</h3>
+            <p>Python client library</p>
+            <a href="sdk.html">Docs →</a>
+        </div>
+        <div class="doc-card">
+            <h3>⌨️ CLI</h3>
+            <p>Command-line tools</p>
+            <a href="cli.html">Docs →</a>
+        </div>
+        <div class="doc-card">
+            <h3>🖥️ TUI</h3>
+            <p>Terminal user interface</p>
+            <a href="tui.html">Docs →</a>
+        </div>
+        <div class="doc-card">
+            <h3>🌐 Web</h3>
+            <p>Browser-based chat UI</p>
+            <a href="web.html">Docs →</a>
+        </div>
+        <div class="doc-card">
+            <h3>🐳 Docker</h3>
+            <p>Containerized deployment</p>
+            <a href="docker.html">Docs →</a>
+        </div>
+    </div>
     
     <h2>Features</h2>
     <div class="feature-grid">
@@ -55,23 +86,16 @@
             <p>Auto-detects code, reasoning, short/long prompts</p>
         </div>
         <div class="feature">
-            <h3>📊 Usage Tracking</h3>
-            <p>Tokens, cost, duration — local or Turso</p>
+            <h3>🔑 Multi-Key Auth</h3>
+            <p>Per-key capabilities & rate limits</p>
         </div>
     </div>
     
-    <h2>Connect Your Apps</h2>
-    <p>One router, many apps — point OpenClaw, VSCode, Cursor, Continue to:</p>
-    <pre><code>http://localhost:8080/v1</code></pre>
-    
-    <h2>Install</h2>
-    <pre><code>git clone https://github.com/CCAgentOrg/picorouter.git
-cd picorouter
-pip install -r requirements.txt
-python picorouter.py serve</code></pre>
+    <h2>Docker</h2>
+    <pre><code>docker run -p 8080:8080 ccagentorg/picorouter</code></pre>
     
     <footer>
-        <p>🌀 PicoRouter — <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a> — MIT License</p>
+        <p>🧩 PicoRouter — <a href="https://github.com/CCAgentOrg/picorouter">GitHub</a> — MIT License</p>
     </footer>
 </body>
 </html>
