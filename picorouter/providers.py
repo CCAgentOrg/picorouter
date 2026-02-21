@@ -378,10 +378,10 @@ class Router:
         for name, cfg in cloud_providers.items():
             self.cloud[name] = CloudProvider(name, cfg)
     
-    async def chat(self, messages: list, **kwargs) -> dict:
+    async def chat(self, messages: list, headers: dict = None, **kwargs) -> dict:
         """Route and execute chat request."""
         from picorouter.router import route_request
-        return await route_request(self, messages, **kwargs)
+        return await route_request(self, messages, headers=headers, **kwargs)
     
     async def try_local(self, messages: list, model: str, **kwargs) -> bool:
         try:

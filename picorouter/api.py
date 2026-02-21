@@ -225,7 +225,10 @@ class APIHandler(BaseHTTPRequestHandler):
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            result = loop.run_until_complete(self.router.chat(messages, profile=profile, **kwargs))
+            # Pass headers for intelligent routing
+            result = loop.run_until_complete(
+                self.router.chat(messages, headers=self.headers, profile=profile, **kwargs)
+            )
             loop.close()
             
             content = result.get("message", {}).get("content", "")
