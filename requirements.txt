@@ -7,6 +7,10 @@ httpx>=0.24.0
 # Optional: Turso/LibSQL for persistent logs
 # libsql-client>=0.6.0
 
+# Testing & Coverage
+pytest>=7.0
+pytest-cov>=4.0
+
 # Optional: for better async support
 # aiohttp>=3.8.0
 
