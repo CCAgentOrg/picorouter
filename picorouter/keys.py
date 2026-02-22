@@ -43,7 +43,9 @@ class KeyManager:
                     "capabilities": info.get("capabilities", {}),
                     "rate_limit": info.get("rate_limit"),
                     "profiles": info.get("profiles", []),
-                    "readonly": info.get("readonly", False)
+                    "readonly": info.get("readonly", False),
+                    "budget": info.get("budget"),  # Monthly budget limit in USD
+                    "budget_period": info.get("budget_period", "monthly")  # monthly, daily, lifetime
                 }
         
         return None
@@ -54,9 +56,21 @@ class KeyManager:
         rate_limit: int = None,
         profiles: list = None,
         expires: str = None,
-        readonly: bool = False
+        readonly: bool = False,
+        budget: float = None,
+        budget_period: str = "monthly"
     ) -> str:
-        """Add a new key and return it."""
+        """Add a new key and return it.
+        
+        Args:
+            name: Key name
+            rate_limit: Requests per minute
+            profiles: Allowed profiles
+            expires: Expiration date (ISO format)
+            readonly: Read-only key
+            budget: Budget limit in USD (None = unlimited)
+            budget_period: monthly, daily, or lifetime
+        """
         key = generate_key()
         key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
         
@@ -66,6 +80,8 @@ class KeyManager:
             "profiles": profiles or ["chat"],
             "expires": expires,
             "readonly": readonly,
+            "budget": budget,
+            "budget_period": budget_period,
             "capabilities": {
                 "chat": not readonly,
                 "models": True,
@@ -106,3 +122,31 @@ class KeyManager:
     def from_config(config: dict) -> "KeyManager":
         """Create KeyManager from config."""
         return KeyManager(config.get("keys", {}))
+
+    def check_budget(self, key_name: str, get_cost_func) -> tuple:
+        """Check if key has remaining budget.
+        
+        Args:
+            key_name: Name of the key to check
+            get_cost_func: Function to get current spend (key_name, period) -> float
+        
+        Returns:
+            (allowed: bool, message: str, remaining: float)
+        """
+        key_info = self.keys.get(key_name, {})
+        budget = key_info.get("budget")
+        
+        # No budget set = unlimited
+        if budget is None:
+            return (True, "unlimited", None)
+        
+        budget_period = key_info.get("budget_period", "monthly")
+        
+        # Get current spend
+        current_spend = get_cost_func(key_name, budget_period)
+        remaining = budget - current_spend
+        
+        if remaining <= 0:
+            return (False, f"Budget exceeded: ${current_spend:.2f}/${budget:.2f} {budget_period}", 0)
+        
+        return (True, f"${remaining:.2f} remaining", remaining)

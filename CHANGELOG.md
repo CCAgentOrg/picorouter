@@ -2,6 +2,26 @@
 
 All notable changes to PicoRouter will be documented in this file.
 
+## [0.0.3c] - 2026-02-22
+
+### Added
+ **Budget control per API key** - Set daily, monthly, or lifetime budget limits
+ **Explicit provider:model routing** - Use "kilo:minimax/m2.5:free" syntax
+ **Auto-fallback between providers** - If model exists on multiple providers, try each
+ **Header routing fully implemented** - X-PicoRouter-* headers for all routing controls
+ **CLI budget flags** - `--budget` and `--budget-period` for key management
+ **Web UI budget fields** - Budget and period inputs in settings page
+
+### Fixed
+ **YOLO mode test** - Fixed incorrect await on task.result()
+ **Test isolation** - Fixed logger tests to use relative assertions
+ **API handler tests** - Fixed handler instantiation for Python 3.12
+
+### Improved
+ Test coverage from 34% to 36%
+ All tests passing (95 passed, 3 skipped)
+
+
 ## [0.0.3] - 2026-02-21
 
 ### Fixed

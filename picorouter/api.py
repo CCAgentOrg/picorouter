@@ -5,6 +5,7 @@ import os
 import time
 import logging
 import threading
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from picorouter.router import Router
 from picorouter.keys import KeyManager
@@ -115,6 +116,30 @@ class APIHandler(BaseHTTPRequestHandler):
 
         return self.rate_limiter.is_allowed(key_name, limit)
 
+
+    def check_budget(self) -> bool:
+        """Check if key has remaining budget."""
+        if not self._auth:
+            return True  # No auth = no budget limit
+        
+        budget = self._auth.get("budget")
+        if budget is None:
+            return True  # No budget set = unlimited
+        
+        key_name = self._auth.get("name")
+        budget_period = self._auth.get("budget_period", "monthly")
+        
+        # Get current spend from logger storage
+        if hasattr(self.router, 'logger') and self.router.logger:
+            current_spend = self.router.logger.storage.get_cost_by_key(key_name, budget_period)
+            remaining = budget - current_spend
+            
+            if remaining <= 0:
+                self.send_error_json(402, f"Budget exceeded: ${current_spend:.2f}/${budget:.2f} {budget_period}")
+                return False
+        
+        return True
+
     def do_GET(self):
         if not self.authenticate():
             return
@@ -163,14 +188,29 @@ class APIHandler(BaseHTTPRequestHandler):
             self.send_error_json(404, "Not found")
 
     def do_POST(self):
-        if not self.authenticate():
-            return
+        # Settings endpoints don't require auth/rate_limit/budget
+        is_settings = self.path.startswith("/settings/")
+        
+        if not is_settings:
+            if not self.authenticate():
+                return
 
-        if not self.check_rate_limit():
-            self.send_error_json(429, "Rate limit exceeded")
-            return
+            if not self.check_rate_limit():
+                self.send_error_json(429, "Rate limit exceeded")
+                return
 
-        if self.path not in ["/v1/chat/completions", "/v1/completions"]:
+            # Check budget before processing request
+            if not self.check_budget():
+                return  # check_budget() sends error response
+
+        # Handle settings endpoints
+        if self.path == "/settings/config":
+            self.handle_settings_config()
+            return
+        elif self.path == "/settings/keys" or self.path.startswith("/settings/keys/"):
+            self.handle_settings_keys()
+            return
+        elif self.path not in ["/v1/chat/completions", "/v1/completions"]:
             self.send_error_json(404, "Not found")
             return
 
@@ -267,8 +307,8 @@ class APIHandler(BaseHTTPRequestHandler):
 
         model = data.get("model", "")
 
-        # Whitelist allowed parameters
-        allowed = {"temperature", "max_tokens", "top_p", "stream", "stop", "profile"}
+        # Whitelist allowed parameters (including model for explicit routing)
+        allowed = {"temperature", "max_tokens", "top_p", "stream", "stop", "profile", "model"}
         kwargs = {k: v for k, v in data.items() if k in allowed}
 
         if "temperature" in kwargs:
@@ -335,11 +375,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-        model = data.get("model", "")
 
-        # Whitelist allowed parameters
-        allowed = {"temperature", "max_tokens", "top_p", "stream", "stop", "profile"}
-        kwargs = {k: v for k, v in data.items() if k in allowed}
 
         # Validate temperature
         if "temperature" in kwargs:
@@ -446,6 +482,116 @@ class APIHandler(BaseHTTPRequestHandler):
                 }
             )
             self.send_error_json(500, "Request failed")
+
+    def handle_settings_config(self):
+        """Handle GET/PUT for /settings/config"""
+        if self.command == "GET":
+            # Return current config (without sensitive data)
+            config = {}
+            if hasattr(self.router, 'config') and self.router.config:
+                config = self.router.config.copy()
+            self.send_json(config)
+        elif self.command == "POST":
+            # Update config
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                new_config = json.loads(body)
+                from picorouter.config import save_config, find_config
+                config_path = find_config()
+                if config_path:
+                    save_config(new_config, config_path)
+                    self.router.config = new_config
+                    self.send_json({"status": "ok"})
+                else:
+                    self.send_error_json(404, "No config file found")
+            except json.JSONDecodeError:
+                self.send_error_json(400, "Invalid JSON")
+            except Exception as e:
+                self.send_error_json(500, str(e))
+        else:
+            self.send_error_json(405, "Method not allowed")
+
+    def handle_settings_keys(self):
+        """Handle GET/POST/DELETE for /settings/keys"""
+        from picorouter.keys import KeyManager
+        from picorouter.config import save_config, find_config
+        
+        config_path = find_config()
+        if not config_path:
+            self.send_error_json(404, "No config file found")
+            return
+        
+        # Load current config
+        from picorouter.config import load_config
+        config = load_config()
+        km = KeyManager.from_config(config)
+        
+        # Parse path for DELETE
+        key_name = None
+        if self.path.startswith("/settings/keys/"):
+            key_name = self.path.split("/settings/keys/")[1]
+        
+        if self.command == "GET":
+            # Return keys info (without hashes)
+            keys_info = {}
+            for name, info in km.keys.items():
+                keys_info[name] = {
+                    "profiles": info.get("profiles", []),
+                    "rate_limit": info.get("rate_limit"),
+                    "expires": info.get("expires"),
+                    "readonly": info.get("readonly", False),
+                    "budget": info.get("budget"),
+                    "budget_period": info.get("budget_period", "monthly"),
+                    "created": info.get("created"),
+                }
+            self.send_json(keys_info)
+        elif self.command == "POST":
+            # Add new key
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                name = data.get("name")
+                if not name:
+                    self.send_error_json(400, "Key name required")
+                    return
+                
+                rate_limit = data.get("rate_limit", 60)
+                profiles = data.get("profiles", ["chat", "coding", "yolo"])
+                if isinstance(profiles, str):
+                    profiles = [p.strip() for p in profiles.split(",")]
+                readonly = data.get("readonly", False)
+                expires = data.get("expires")
+                budget = data.get("budget")
+                budget_period = data.get("budget_period", "monthly")
+                
+                key = km.add_key(
+                    name,
+                    rate_limit=rate_limit,
+                    profiles=profiles,
+                    readonly=readonly,
+                    expires=expires,
+                    budget=budget,
+                    budget_period=budget_period,
+                )
+                config["keys"] = km.get_config()
+                save_config(config, config_path)
+                self.send_json({"key": key, "name": name})
+            except json.JSONDecodeError:
+                self.send_error_json(400, "Invalid JSON")
+            except Exception as e:
+                self.send_error_json(500, str(e))
+        elif self.command == "DELETE" and key_name:
+            # Delete key
+            if km.remove_key(key_name):
+                config["keys"] = km.get_config()
+                save_config(config, config_path)
+                self.send_json({"status": "ok"})
+            else:
+                self.send_error_json(404, "Key not found")
+        else:
+            self.send_error_json(405, "Method not allowed")
 
 
 def run_server(

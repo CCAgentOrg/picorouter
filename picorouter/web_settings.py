@@ -93,6 +93,18 @@ SETTINGS_HTML = """<!DOCTYPE html>
                     <label>Allowed Profiles (comma-separated)</label>
                     <input type="text" id="new-key-profiles" placeholder="chat, coding">
                 </div>
+                <div class="form-group">
+                    <label>Budget (USD, empty = unlimited)</label>
+                    <input type="number" id="new-key-budget" placeholder="10.00" step="0.01" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Budget Period</label>
+                    <select id="new-key-budget-period">
+                        <option value="monthly">Monthly</option>
+                        <option value="daily">Daily</option>
+                        <option value="lifetime">Lifetime</option>
+                    </select>
+                </div>
                 <button onclick="addKey()">➕ Add Key</button>
             </div>
         </div>
@@ -178,11 +190,12 @@ SETTINGS_HTML = """<!DOCTYPE html>
                 const resp = await fetch('/settings/keys');
                 const keys = await resp.json();
                 let html = '<table style="width:100%; border-collapse: collapse;">';
-                html += '<tr><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Name</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Rate Limit</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Profiles</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Actions</th></tr>';
+                html += '<tr><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Name</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Rate</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Profiles</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Budget</th><th style="text-align:left; padding:8px; border-bottom:1px solid #ddd;">Actions</th></tr>';
                 for (const [name, key] of Object.entries(keys)) {
                     const rate = key.rate_limit || '-';
                     const profiles = (key.profiles || []).join(', ') || 'all';
-                    html += `<tr><td style="padding:8px; border-bottom:1px solid #ddd;">${name}</td><td style="padding:8px; border-bottom:1px solid #ddd;">${rate}</td><td style="padding:8px; border-bottom:1px solid #ddd;">${profiles}</td><td style="padding:8px; border-bottom:1px solid #ddd;"><button class="danger" onclick="removeKey('${name}')">🗑️</button></td></tr>`;
+                    const budget = key.budget ? `${key.budget}/${key.budget_period || 'monthly'}` : '-';
+                    html += `<tr><td style="padding:8px; border-bottom:1px solid #ddd;">${name}</td><td style="padding:8px; border-bottom:1px solid #ddd;">${rate}/min</td><td style="padding:8px; border-bottom:1px solid #ddd;">${profiles}</td><td style="padding:8px; border-bottom:1px solid #ddd;">${budget}</td><td style="padding:8px; border-bottom:1px solid #ddd;"><button class="danger" onclick="removeKey('${name}')">🗑️</button></td></tr>`;
                 }
                 html += '</table>';
                 document.getElementById('keys-list').innerHTML = html || 'No keys configured';
@@ -195,6 +208,9 @@ SETTINGS_HTML = """<!DOCTYPE html>
             const name = document.getElementById('new-key-name').value;
             const rate = parseInt(document.getElementById('new-key-rate').value);
             const profiles = document.getElementById('new-key-profiles').value.split(',').map(p => p.trim()).filter(p => p);
+            const budgetEl = document.getElementById('new-key-budget');
+            const budget = budgetEl.value ? parseFloat(budgetEl.value) : null;
+            const budgetPeriod = document.getElementById('new-key-budget-period').value;
             
             if (!name) {
                 showStatus('Please enter a key name', 'error');
@@ -205,7 +221,7 @@ SETTINGS_HTML = """<!DOCTYPE html>
                 const resp = await fetch('/settings/keys', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({name, rate_limit: rate, profiles})
+                    body: JSON.stringify({name, rate_limit: rate, profiles, budget, budget_period: budgetPeriod})
                 });
                 if (resp.ok) {
                     showStatus('Key added!', 'success');

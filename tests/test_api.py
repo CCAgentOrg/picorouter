@@ -47,7 +47,11 @@ class TestAPIHandler:
     
     def create_handler(self, router=None, key_manager=None, rate_limiter=None):
         """Create mock API handler."""
-        handler = type('Handler', (APIHandler,), {})()
+        # Create mock request to properly initialize handler
+        mock_request = MagicMock()
+        mock_request.makefile.return_value = BytesIO(b"GET / HTTP/1.1\r\n\r\n")
+        
+        handler = APIHandler(mock_request, ('127.0.0.1', 8080), Mock())
         
         # Mock required attributes
         handler.path = "/health"
@@ -185,19 +189,14 @@ class TestJSONParsing:
     
     def test_valid_json(self):
         """Test valid JSON parsing."""
-        handler = type('Handler', (APIHandler,), {})()
-        handler.headers = {"Content-Length": "50"}
-        handler.rfile = BytesIO(b'{"messages": [{"role": "user", "content": "Hi"}]}')
-        
-        body = handler.rfile.read(50)
+        # Test JSON parsing directly (no handler needed)
+        body = b'{"messages": [{"role": "user", "content": "Hi"}]}'
         data = json.loads(body)
         
         assert data["messages"][0]["content"] == "Hi"
     
     def test_invalid_json(self):
         """Test invalid JSON handling."""
-        handler = type('Handler', (APIHandler,), {})()
-        
         # Should raise
         with pytest.raises(json.JSONDecodeError):
             json.loads("not valid json")

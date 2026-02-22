@@ -28,6 +28,18 @@ class StorageBackend:
     def get_recent(self, limit: int = 50) -> List:
         raise NotImplementedError
 
+    def get_cost_by_key(self, key_name: str, period: str = "monthly") -> float:
+        """Get total cost for a key within a time period.
+        
+        Args:
+            key_name: Name of the key
+            period: monthly, daily, or lifetime
+        
+        Returns:
+            Total cost in USD
+        """
+        raise NotImplementedError
+
     def close(self) -> None:
         pass
 
@@ -102,6 +114,36 @@ class JSONLBackend(StorageBackend):
                     logger.debug(f"Skipping invalid log entry: {e}")
                     continue
         return entries[-limit:]
+
+
+    def get_cost_by_key(self, key_name: str, period: str = "monthly") -> float:
+        """Get total cost for a key within a time period."""
+        if not self.log_file.exists():
+            return 0.0
+        
+        from datetime import datetime, timedelta
+        
+        # Calculate time threshold
+        now = datetime.now()
+        if period == "daily":
+            threshold = (now - timedelta(days=1)).isoformat()
+        elif period == "monthly":
+            threshold = (now - timedelta(days=30)).isoformat()
+        else:  # lifetime
+            threshold = "1970-01-01"
+        
+        total_cost = 0.0
+        with open(self.log_file) as f:
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    # Check if entry matches key and is within time period
+                    if entry.get("key") == key_name and entry.get("timestamp", "") >= threshold:
+                        total_cost += entry.get("cost_usd", 0)
+                except (json.JSONDecodeError, KeyError):
+                    continue
+        
+        return total_cost
 
 
 class SQLiteBackend(StorageBackend):
@@ -253,6 +295,29 @@ class SQLiteBackend(StorageBackend):
 
     def close(self):
         self.conn.close()
+
+
+    def get_cost_by_key(self, key_name: str, period: str = "monthly") -> float:
+        """Get total cost for a key within a time period."""
+        from datetime import datetime, timedelta
+        
+        # Calculate time threshold
+        now = datetime.now()
+        if period == "daily":
+            threshold = (now - timedelta(days=1)).isoformat()
+        elif period == "monthly":
+            threshold = (now - timedelta(days=30)).isoformat()
+        else:  # lifetime
+            threshold = "1970-01-01"
+        
+        cur = self.conn.cursor()
+        cur.execute(
+            """SELECT SUM(cost_usd) FROM requests 
+                WHERE key_name = ? AND timestamp >= ?""",
+            (key_name, threshold)
+        )
+        result = cur.fetchone()[0]
+        return result or 0.0
 
 
 class TursoBackend(SQLiteBackend):

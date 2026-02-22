@@ -180,6 +180,13 @@ def main():
         "--readonly", action="store_true", help="Read-only key (chat disabled)"
     )
     key_add.add_argument("--expires", help="Expiration date (ISO format)")
+    key_add.add_argument("--budget", type=float, help="Budget limit in USD (None = unlimited)")
+    key_add.add_argument(
+        "--budget-period",
+        choices=["daily", "monthly", "lifetime"],
+        default="monthly",
+        help="Budget period (daily, monthly, or lifetime)",
+    )
 
     key_list = key_subparsers.add_parser("list", help="List API keys")
     key_remove = key_subparsers.add_parser("remove", help="Remove API key")
@@ -257,12 +264,16 @@ def main():
                 profiles=profiles,
                 readonly=args.readonly,
                 expires=args.expires,
+                budget=args.budget,
+                budget_period=args.budget_period,
             )
             config["keys"] = km.get_config()
             save_config(config, config_path)
             print(f"✅ Added key '{args.name}': {key}")
             print(f"   Rate limit: {args.rate_limit}/min")
             print(f"   Profiles: {profiles}")
+            if args.budget:
+                print(f"   Budget: ${args.budget:.2f} per {args.budget_period}")
 
         elif args.key_command == "list":
             keys = km.list_keys()
