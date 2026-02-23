@@ -9,6 +9,7 @@ from picorouter.providers import (
     create_provider,
     RateLimitError,
 )
+from picorouter.health import get_health_monitor, init_health_monitor
 
 
 class Router:
@@ -30,6 +31,9 @@ class Router:
         cloud_providers = self.profile.get("cloud", {}).get("providers", {})
         for name, cfg in cloud_providers.items():
             self.cloud[name] = CloudProvider(name, cfg)
+        
+        # Initialize health monitor
+        self.health_monitor = init_health_monitor(config, self.profile_name)
 
     async def chat(self, messages: list, headers: dict = None, **kwargs) -> Dict:
         """Route and execute chat request."""
@@ -60,6 +64,10 @@ class Router:
         model = kwargs.pop("model", None)
         return await prov.chat(messages, model, **kwargs)
 
+    def is_provider_healthy(self, provider: str) -> bool:
+        """Check if a provider is healthy enough for routing."""
+        return self.health_monitor.is_healthy(provider)
+
     async def yolo_chat(self, messages: list, **kwargs) -> Dict:
         """Fire all, return first success."""
         tasks = []
@@ -73,6 +81,9 @@ class Router:
 
         # Cloud providers
         for name, prov in self.cloud.items():
+            # Skip unhealthy/down providers
+            if not self.is_provider_healthy(name):
+                continue
             for model in prov.models:
                 coro = prov.chat(messages, model, **kwargs)
                 task = asyncio.create_task(coro)
@@ -277,6 +288,9 @@ async def route_with_model_fallback(router, messages: list, model: str, provider
         Exception if all providers fail
     """
     for prov_name, prov_config in providers:
+        # Skip unhealthy/down providers
+        if not router.is_provider_healthy(prov_name):
+            continue
         try:
             return await router.cloud_chat(messages, prov_name, model=model, **kwargs)
         except router.RateLimitError:
@@ -398,6 +412,9 @@ async def route_request(router, messages: list, headers: dict = None, **kwargs) 
         providers = {k: v for k, v in providers.items() if k in matched.get("providers", [])}
     
     for prov_name, prov_config in providers.items():
+        # Skip unhealthy/down providers
+        if not router.is_provider_healthy(prov_name):
+            continue
         prov_models = prov_config.get("models", [])
         for model in prov_models:
             try:

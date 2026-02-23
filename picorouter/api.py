@@ -154,7 +154,7 @@ class APIHandler(BaseHTTPRequestHandler):
                 return
             self.handle_models()
         elif self.path == "/health":
-            self.send_json({"status": "ok"})
+            self.handle_health()
         elif self.path == "/stats":
             if not self.check_capability("stats"):
                 self.send_error_json(403, "Capability not allowed")
@@ -233,6 +233,33 @@ class APIHandler(BaseHTTPRequestHandler):
             self.handle_chat(data)
         else:
             self.send_error_json(501, "Not implemented")
+
+    def handle_health(self):
+        """Handle /health endpoint - return provider health status."""
+        from picorouter.health import get_health_monitor
+        
+        monitor = get_health_monitor()
+        providers = monitor.get_all_health()
+        
+        # Build provider status list
+        provider_status = []
+        for p in providers:
+            provider_status.append({
+                "name": p.name,
+                "status": p.status,
+                "indicator": p.indicator,
+                "latency_ms": round(p.latency_ms, 2),
+                "uptime": round(p.uptime * 100, 2),
+                "error_rate": round(p.error_rate * 100, 2),
+            })
+        
+        summary = monitor.get_status_summary()
+        
+        self.send_json({
+            "status": "ok",
+            "summary": summary,
+            "providers": provider_status,
+        })
 
     def handle_models(self):
         models = []
