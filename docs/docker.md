@@ -17,7 +17,12 @@ docker run -p 8080:8080 \
 
 ## Image Variants
 
-| Tag | Description | Size |
+|| Tag | Description | Size |
+||-----|-------------|
+|| `latest` | Latest release | ~80MB |
+|| `v0.0.3` | Version 0.0.3 | ~80MB |
+|| `v0.0.2` | Version 0.0.2 | ~80MB |
+|| `slim` | Slimmer (coming) | ~60MB |
 |-----|-------------|------|
 | `latest` | Latest release | ~80MB |
 | `v0.0.2` | Specific version | ~80MB |

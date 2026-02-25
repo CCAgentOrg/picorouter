@@ -2,27 +2,18 @@
 
 All notable changes to PicoRouter will be documented in this file.
 
-## [0.0.3c] - 2026-02-22
+## [0.0.3] - 2026-02-25
 
 ### Added
- **Budget control per API key** - Set daily, monthly, or lifetime budget limits
- **Explicit provider:model routing** - Use "kilo:minimax/m2.5:free" syntax
- **Auto-fallback between providers** - If model exists on multiple providers, try each
- **Header routing fully implemented** - X-PicoRouter-* headers for all routing controls
- **CLI budget flags** - `--budget` and `--budget-period` for key management
- **Web UI budget fields** - Budget and period inputs in settings page
-
-### Fixed
- **YOLO mode test** - Fixed incorrect await on task.result()
- **Test isolation** - Fixed logger tests to use relative assertions
- **API handler tests** - Fixed handler instantiation for Python 3.12
-
-### Improved
- Test coverage from 34% to 36%
- All tests passing (95 passed, 3 skipped)
-
-
-## [0.0.3] - 2026-02-21
+- **Budget control per API key** - Set daily, monthly, or lifetime budget limits
+- **Explicit provider:model routing** - Use "kilo:minimax/m2.5:free" syntax
+- **Auto-fallback between providers** - If model exists on multiple providers, try each
+- **Header routing fully implemented** - X-PicoRouter-* headers for all routing controls
+- **CLI budget flags** - `--budget` and `--budget-period` for key management
+- **Web UI budget fields** - Budget and period inputs in settings page
+- **Health monitoring** - /health endpoint, status CLI, auto-exclude down providers
+- **Request logging** - logs/requests.jsonl with status and cost tracking
+- **Privacy routing design** - ZDR (Zero Data Retention) model routing
 
 ### Fixed
 - **Critical syntax error** in storage.py (TursoBackend initialization)
@@ -32,9 +23,12 @@ All notable changes to PicoRouter will be documented in this file.
   - storage.py (JSONL log file parsing)
   - api.py (query parameter parsing)
 - **Missing VaultwardenBackend.delete()** - Implemented secret deletion via bw CLI
-- **Rate limiter thread-safety** - Added threading.Lock to prevent race conditions in multi-threaded API server
+- **Rate limiter thread-safety** - Added threading.Lock to prevent race conditions
 - **Missing imports** - Restored BaseHTTPRequestHandler, Router, and KeyManager imports in api.py
-- **Fragile models.dev parsing** - Improved with multiple strategies, better error handling, and regex fallback
+- **Fragile models.dev parsing** - Improved with multiple strategies, better error handling
+- **YOLO mode test** - Fixed incorrect await on task.result()
+- **Test isolation** - Fixed logger tests to use relative assertions
+- **API handler tests** - Fixed handler instantiation for Python 3.12
 
 ### Security
 - **API input validation** - Added comprehensive validation for /v1/chat/completions:
@@ -50,6 +44,9 @@ All notable changes to PicoRouter will be documented in this file.
 - Thread-safe rate limiting for production use
 - Complete Vaultwarden secrets backend implementation
 - Robust models.dev data parsing with fallback strategies
+- Test coverage improvements
+
+---
 
 ## [0.0.1] - 2026-02-21
 

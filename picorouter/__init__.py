@@ -1,2 +1,2 @@
 # PicoRouter
-__version__ = "0.0.3c"
+__version__ = "0.0.3"
