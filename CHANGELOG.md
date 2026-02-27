@@ -2,6 +2,18 @@
 
 All notable changes to PicoRouter will be documented in this file.
 
+## [0.0.4] - 2026-02-28
+
+### Fixed
+- **Ollama streaming** - Add `stream: false` to /api/chat payload to fix JSON
+  parsing errors when Ollama returns streaming responses by default
+
+---
+
+## [0.0.3] - 2026-02-25
+
+All notable changes to PicoRouter will be documented in this file.
+
 ## [0.0.3] - 2026-02-25
 
 ### Added
