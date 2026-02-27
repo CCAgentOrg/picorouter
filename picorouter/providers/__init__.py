@@ -190,7 +190,7 @@ class LocalProvider(BaseProvider):
             payload = {"model": model, "messages": messages, **kwargs}
         else:
             url = f"{self.endpoint}/api/chat"
-            payload = {"model": model, "messages": messages, **kwargs}
+            payload = {"model": model, "messages": messages, "stream": False, **kwargs}
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(url, json=payload)
