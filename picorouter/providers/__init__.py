@@ -506,7 +506,7 @@ class VirtualProvider(BaseProvider):
         """Route to appropriate providers based on type."""
 
         if self.route_type == "privacy":
-            return await self._route_local_only(messages, router, **kwargs)
+            return await self._route_privacy(messages, router, **kwargs)
         elif self.route_type == "free":
             return await self._route_free(messages, router, **kwargs)
         elif self.route_type == "fast":
@@ -515,6 +515,52 @@ class VirtualProvider(BaseProvider):
             return await self._route_sota(messages, router, **kwargs)
 
         raise Exception(f"Unknown virtual route: {self.route_type}")
+
+    async def _route_privacy(self, messages, router, **kwargs):
+        """Route to privacy-compliant providers (ZDR).
+        
+        Priority:
+        1. Local providers (Ollama, LM Studio) - always ZDR
+        2. ZDR-tagged models from OpenRouter
+        3. Fail if no ZDR model available (no non-ZDR fallback)
+        """
+        from picorouter.providers import get_zdr_models, refresh_zdr_cache
+        
+        # Priority 1: Try local providers (always ZDR)
+        local = router.profile.get("local", {})
+        for model in local.get("models", []):
+            try:
+                if await router.try_local(messages, model, **kwargs):
+                    return await router.local_chat(messages, model, **kwargs)
+            except Exception:
+                continue
+        
+        # Priority 2: Try ZDR models from OpenRouter
+        try:
+            # Refresh cache to get latest ZDR models
+            all_models = await refresh_zdr_cache(force=False)
+            zdr_models = get_zdr_models()
+            
+            if not zdr_models:
+                raise Exception("No ZDR models available from OpenRouter")
+            
+            # Try each ZDR model
+            openrouter = router.cloud.get("openrouter")
+            if openrouter:
+                for model_info in zdr_models:
+                    model_id = model_info["id"]
+                    try:
+                        return await openrouter.chat(messages, model_id, **kwargs)
+                    except RateLimitError:
+                        continue
+                    except Exception:
+                        continue
+            
+            raise Exception("No ZDR providers available")
+            
+        except Exception as e:
+            # Don't fall back to non-ZDR - fail as per design decision
+            raise Exception(f"No privacy-compliant providers available: {e}")
 
     async def _route_local_only(self, messages, router, **kwargs):
         local = router.profile.get("local", {})
@@ -593,3 +639,141 @@ class VirtualProvider(BaseProvider):
 
     async def list_models(self) -> List:
         return []
+# =============================================================================
+# ZDR (Zero Data Retention) Model Caching
+# =============================================================================
+
+import time
+
+ZDR_CACHE_TTL = 86400  # 24 hours in seconds
+
+_zdr_cache = {
+    "models": [],
+    "timestamp": 0,
+}
+
+
+def _is_cache_valid() -> bool:
+    """Check if ZDR cache is still valid."""
+    return time.time() - _zdr_cache["timestamp"] < ZDR_CACHE_TTL
+
+
+async def fetch_openrouter_models(force_refresh: bool = False) -> List[Dict]:
+    """Fetch models from OpenRouter API and extract ZDR metadata.
+    
+    Args:
+        force_refresh: If True, ignore cache and fetch fresh data
+        
+    Returns:
+        List of model dictionaries with ZDR and pricing info
+    """
+    global _zdr_cache
+    
+    # Return cached data if valid and not forcing refresh
+    if not force_refresh and _zdr_cache["models"] and _is_cache_valid():
+        return _zdr_cache["models"]
+    
+    # Get API key
+    api_key = _secrets.get_provider_key("openrouter")
+    if not api_key:
+        # Return cached data if available, even if expired
+        if _zdr_cache["models"]:
+            return _zdr_cache["models"]
+        raise Exception("OpenRouter API key not configured. Run: pico router secrets set --provider openrouter --key YOUR_KEY")
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.get(
+                "https://openrouter.ai/api/v1/models",
+                headers=headers,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            
+            models = []
+            for model in data.get("data", []):
+                # Extract ZDR info from privacy field
+                privacy = model.get("privacy", {})
+                pricing = model.get("pricing", {})
+                
+                model_info = {
+                    "id": model.get("id"),
+                    "name": model.get("name"),
+                    "zdr": privacy.get("zero_retention", False),
+                    "price_input": float(pricing.get("prompt", 0)),
+                    "price_output": float(pricing.get("completion", 0)),
+                    "price_cache": float(pricing.get("cached-prompt", 0)),
+                }
+                models.append(model_info)
+            
+            # Update cache
+            _zdr_cache = {
+                "models": models,
+                "timestamp": time.time(),
+            }
+            
+            return models
+            
+        except httpx.HTTPStatusError as e:
+            # Return cached data on API error
+            if _zdr_cache["models"]:
+                return _zdr_cache["models"]
+            raise Exception(f"Failed to fetch OpenRouter models: {e}")
+        except Exception as e:
+            # Return cached data on any error
+            if _zdr_cache["models"]:
+                return _zdr_cache["models"]
+            raise Exception(f"Failed to fetch OpenRouter models: {e}")
+
+
+def get_zdr_models() -> List[Dict]:
+    """Get cached ZDR models.
+    
+    Returns cached models filtered to only ZDR-capable ones.
+    Does NOT refresh cache - use refresh_zdr_cache() for that.
+    """
+    return [m for m in _zdr_cache["models"] if m.get("zdr", False)]
+
+
+def get_all_models() -> List[Dict]:
+    """Get all cached models with metadata.
+    
+    Returns all models including ZDR status and pricing.
+    """
+    return _zdr_cache["models"]
+
+
+async def refresh_zdr_cache(force: bool = True) -> List[Dict]:
+    """Force refresh the ZDR model cache.
+    
+    Args:
+        force: If True, always fetch fresh data from API
+        
+    Returns:
+        List of all models with ZDR metadata
+    """
+    return await fetch_openrouter_models(force_refresh=force)
+
+
+def get_cache_info() -> dict:
+    """Get information about the ZDR cache.
+    
+    Returns:
+        Dict with cache status, model count, ZDR count, and age
+    """
+    age = time.time() - _zdr_cache["timestamp"]
+    return {
+        "cached": len(_zdr_cache["models"]) > 0,
+        "total_models": len(_zdr_cache["models"]),
+        "zdr_count": len(get_zdr_models()),
+        "age_seconds": age,
+        "age_hours": age / 3600,
+        "ttl_seconds": ZDR_CACHE_TTL,
+        "ttl_hours": ZDR_CACHE_TTL / 3600,
+        "expired": age >= ZDR_CACHE_TTL if _zdr_cache["timestamp"] > 0 else True,
+    }

@@ -115,7 +115,21 @@ Options:
   -p, --provider NAME Filter by provider
   -n, --limit N       Max results (default: 20)
 
-# Sync to config
+# List providers
+python picorouter.py models providers
+
+# List cached models (including ZDR)
+python picorouter.py models list
+
+# List only ZDR models
+python picorouter.py models list --zdr
+
+# Force refresh model cache
+python picorouter.py models list --zdr --refresh
+
+# Output as JSON
+python picorouter.py models list --json
+```
 python picorouter.py models sync -o OUTPUT
 
 # List providers

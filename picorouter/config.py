@@ -225,6 +225,89 @@ def generate_example() -> Dict:
                 },
                 "routing": [{"if": "short_prompt", "use_local": True}],
                 "yolo": False,
+                # Privacy settings
+                "privacy": {
+                    "mode": "optional",  # strict, optional, disabled
+                    "zdr_only": False,   # Only use ZDR models
+                },
+            },
+            "coding": {
+                "local": {
+                    "provider": "ollama",
+                    "endpoint": "http://localhost:11434",
+                    "models": ["codellama"],
+                },
+                "cloud": {"providers": {"kilo": {"models": ["minimax/m2.5:free"]}}},
+                "routing": [{"if": "contains_code", "use_local": True}],
+                "yolo": False,
+                "privacy": {
+                    "mode": "optional",
+                    "zdr_only": False,
+                },
+            },
+            "yolo": {
+                "local": {
+                    "provider": "ollama",
+                    "endpoint": "http://localhost:11434",
+                    "models": ["llama3", "codellama"],
+                },
+                "cloud": {
+                    "providers": {
+                        "kilo": {"models": ["minimax/m2.5:free"]},
+                        "groq": {"models": ["llama-3.1-70b-versatile"]},
+                        "openrouter": {"models": ["openrouter/free"]},
+                    }
+                },
+                "yolo": True,
+                "privacy": {
+                    "mode": "disabled",
+                    "zdr_only": False,
+                },
+            },
+            # Privacy-only profile
+            "privacy": {
+                "local": {
+                    "provider": "ollama",
+                    "endpoint": "http://localhost:11434",
+                    "models": ["llama3"],
+                },
+                "cloud": {
+                    "providers": {
+                        "openrouter": {"models": ["openrouter/free"]},
+                    }
+                },
+                "routing": [],
+                "yolo": False,
+                "privacy": {
+                    "mode": "strict",  # Only ZDR, fail if unavailable
+                    "zdr_only": True,
+                },
+            },
+        },
+        "default_profile": "chat",
+        "server": {"host": "0.0.0.0", "port": 8080},
+        "storage": {"backend": "jsonl", "log_file": "logs/requests.jsonl"},
+        "config": {
+            "backend": "file"  # file, sqlite, turso
+        },
+    }
+    """Generate example configuration."""
+    return {
+        "profiles": {
+            "chat": {
+                "local": {
+                    "provider": "ollama",
+                    "endpoint": "http://localhost:11434",
+                    "models": ["llama3"],
+                },
+                "cloud": {
+                    "providers": {
+                        "kilo": {"models": ["minimax/m2.5:free"]},
+                        "openrouter": {"models": ["openrouter/free"]},
+                    }
+                },
+                "routing": [{"if": "short_prompt", "use_local": True}],
+                "yolo": False,
             },
             "coding": {
                 "local": {

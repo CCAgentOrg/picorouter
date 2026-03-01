@@ -375,6 +375,12 @@ COST_PER_MILLION = {
     "fireworks": 0.60,
     "replicate": 0.50,
     "azure": 1.00,
+    # Virtual providers
+    "picorouter/privacy": 0.50,
+    "picorouter/free": 0,
+    "picorouter/fast": 0.18,
+    "picorouter/sota": 1.00,
+    "default": 0.50,
     "default": 0.50,
 }
 

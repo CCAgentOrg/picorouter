@@ -201,5 +201,74 @@ def models_cli(args):
             print("🏢 Available Providers:")
             for p in sorted(providers):
                 print(f"   • {p}")
+        
+        elif args.command == "list":
+            from picorouter.providers import (
+                get_zdr_models,
+                get_all_models,
+                refresh_zdr_cache,
+                get_cache_info,
+            )
+            
+            # Refresh if requested
+            if args.refresh:
+                print("🔄 Refreshing ZDR model cache...")
+                try:
+                    all_models = await refresh_zdr_cache(force=True)
+                except Exception as e:
+                    print(f"⚠️  Error refreshing cache: {e}")
+                    all_models = get_all_models()
+            else:
+                all_models = get_all_models()
+            
+            # Filter by ZDR if requested
+            if args.zdr:
+                models = get_zdr_models()
+                title = "🔒 ZDR (Privacy) Models"
+            else:
+                models = all_models
+                title = "📋 All Cached Models"
+            
+            # Output as JSON if requested
+            if args.json:
+                import json
+                print(json.dumps(models, indent=2))
+                return
+            
+            # Format as table
+            cache_info = get_cache_info()
+            print(f"\n{title}")
+            print("=" * 60)
+            
+            if not models:
+                print("No models found.")
+                if not args.zdr:
+                    print("\n💡 Try: picorouter models list --zdr --refresh")
+                return
+            
+            # Print cache info
+            if cache_info["cached"]:
+                age = cache_info["age_hours"]
+                status = "fresh" if not cache_info["expired"] else "expired"
+                print(f"📦 Cache: {cache_info['total_models']} models, {cache_info['zdr_count']} ZDR | {age:.1f}h old ({status})")
+            else:
+                print(f"📦 Cache: {cache_info['total_models']} models, {cache_info['zdr_count']} ZDR | Not loaded")
+            print()
+            
+            # Print models in table format
+            print(f"{'Model ID':<45} {'ZDR':>5} {'$/M Input':>10}")
+            print("-" * 60)
+            for m in models[:50]:  # Limit display
+                zdr = "✅" if m.get("zdr") else "❌"
+                price = m.get("price_input", 0)
+                print(f"{m.get('id', 'unknown'):<45} {zdr:>5} {price:>10.2f}")
+            
+            if len(models) > 50:
+                print(f"... and {len(models) - 50} more")
+            models = await fetch_models_dev_models()
+            providers = set(m.get("provider", "") for m in models)
+            print("🏢 Available Providers:")
+            for p in sorted(providers):
+                print(f"   • {p}")
 
     asyncio.run(run())

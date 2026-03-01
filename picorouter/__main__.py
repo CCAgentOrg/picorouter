@@ -168,7 +168,9 @@ def main():
 
     # Status
     status_parser = subparsers.add_parser("status", help="Show provider health status")
-    status_parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    status_parser.add_argument(
+        "--json", "-j", action="store_true", help="Output as JSON"
+    )
 
     # Key management
     key_parser = subparsers.add_parser("key", help="API Key management")
@@ -184,7 +186,9 @@ def main():
         "--readonly", action="store_true", help="Read-only key (chat disabled)"
     )
     key_add.add_argument("--expires", help="Expiration date (ISO format)")
-    key_add.add_argument("--budget", type=float, help="Budget limit in USD (None = unlimited)")
+    key_add.add_argument(
+        "--budget", type=float, help="Budget limit in USD (None = unlimited)"
+    )
     key_add.add_argument(
         "--budget-period",
         choices=["daily", "monthly", "lifetime"],
@@ -238,6 +242,16 @@ def main():
     models_providers = models_subparsers.add_parser(
         "providers", help="List available providers"
     )
+
+    # NEW: models list command
+    models_list = models_subparsers.add_parser("list", help="List cached models")
+    models_list.add_argument(
+        "--zdr", action="store_true", help="Show only ZDR (privacy) models"
+    )
+    models_list.add_argument(
+        "--refresh", action="store_true", help="Force refresh model cache"
+    )
+    models_list.add_argument("--json", action="store_true", help="Output as JSON")
 
     args = parser.parse_args()
 
@@ -376,23 +390,33 @@ def main():
 
     elif args.command == "status":
         from picorouter.health import get_health_monitor
-        
+
         monitor = get_health_monitor()
         providers = monitor.get_all_health()
         summary = monitor.get_status_summary()
-        
+
         if args.json:
             import json
-            print(json.dumps({
-                "summary": summary,
-                "providers": [p.to_dict() for p in providers],
-            }, indent=2))
+
+            print(
+                json.dumps(
+                    {
+                        "summary": summary,
+                        "providers": [p.to_dict() for p in providers],
+                    },
+                    indent=2,
+                )
+            )
         else:
             print("\n🏥 Provider Health Status")
-            print(f"  Total: {summary['total']} | 🟢 {summary['healthy']} | 🟡 {summary['degraded']} | 🔴 {summary['down']} | ⚪ {summary['unknown']}")
+            print(
+                f"  Total: {summary['total']} | 🟢 {summary['healthy']} | 🟡 {summary['degraded']} | 🔴 {summary['down']} | ⚪ {summary['unknown']}"
+            )
             print()
             for p in providers:
-                print(f"  {p.indicator} {p.name:12} {p.status:8} | latency: {p.latency_ms:>7.0f}ms | uptime: {p.uptime*100:>5.1f}%")
+                print(
+                    f"  {p.indicator} {p.name:12} {p.status:8} | latency: {p.latency_ms:>7.0f}ms | uptime: {p.uptime * 100:>5.1f}%"
+                )
                 if p.last_error:
                     print(f"         └─ Last error: {p.last_error}")
 

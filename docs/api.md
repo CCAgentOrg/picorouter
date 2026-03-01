@@ -130,3 +130,58 @@ curl -H "X-PicoRouter-Local: true" ...
 # Enable YOLO mode
 curl -H "X-PicoRouter-Yolo: true" ...
 ```
+curl -H "X-PicoRouter-Yolo: true" ...
+# Enable YOLO mode
+curl -H "X-PicoRouter-Yolo: true" ...
+```
+
+## Privacy Routing (ZDR)
+
+PicoRouter supports Zero Data Retention (ZDR) routing through OpenRouter.
+
+### Using Privacy Provider
+
+Use the virtual provider `picorouter/privacy` to route requests through ZDR models:
+
+```bash
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [{"role": "user", "content": "Hello"}],
+    "model": "picorouter/privacy"
+  }'
+```
+
+### How It Works
+
+1. **Local First**: Tries local providers (Ollama, LM Studio) first - always ZDR
+2. **ZDR Models**: Then tries ZDR-tagged models from OpenRouter
+3. **Fail on No ZDR**: If no ZDR model available, returns error (no fallback to non-ZDR)
+
+### Configuration
+
+Add privacy settings to your profile:
+
+```yaml
+profiles:
+  chat:
+    privacy:
+      mode: optional  # strict, optional, disabled
+      zdr_only: false
+```
+
+- `mode: strict` - Only ZDR models, fail if unavailable
+- `mode: optional` - Prefer ZDR, fallback allowed
+- `mode: disabled` - No ZDR preference
+- `zdr_only: true` - Only use ZDR-capable models
+
+### Listing ZDR Models
+
+```bash
+# List ZDR models
+python picorouter.py models list --zdr
+
+# Force refresh model cache
+python picorouter.py models list --zdr --refresh
+```
+```
